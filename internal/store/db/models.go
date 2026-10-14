@@ -16,11 +16,13 @@ type TemplatesTemplate struct {
 }
 
 type TemplatesTemplateVersion struct {
-	Name      string
-	Version   int64
-	Parts     json.RawMessage
-	Sample    json.RawMessage
-	Author    string
-	Comment   string
-	CreatedAt time.Time
+	Name            string
+	Version         int64
+	Parts           json.RawMessage
+	Translations    json.RawMessage
+	DefaultLanguage string
+	Sample          json.RawMessage
+	Author          string
+	Comment         string
+	CreatedAt       time.Time
 }

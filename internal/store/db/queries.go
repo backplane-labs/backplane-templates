@@ -27,18 +27,22 @@ func (q *Queries) WithTx(tx pgx.Tx) *Queries { return &Queries{db: tx} }
 
 const listTemplatesSQL = `SELECT t.name, t.description, t.active_version, t.created_at, t.updated_at,
   (SELECT count(*) FROM templates.template_version v WHERE v.name = t.name) AS versions,
-  (SELECT v.parts FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_parts
+  (SELECT v.parts FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_parts,
+  (SELECT v.translations FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_translations,
+  (SELECT v.default_language FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_default
 FROM templates.template t
 ORDER BY t.name;`
 
 type ListTemplatesRow struct {
-	Name          string
-	Description   string
-	ActiveVersion *int64
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	Versions      int64
-	ActiveParts   json.RawMessage
+	Name               string
+	Description        string
+	ActiveVersion      *int64
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	Versions           int64
+	ActiveParts        json.RawMessage
+	ActiveTranslations json.RawMessage
+	ActiveDefault      *string
 }
 
 func (q *Queries) ListTemplates(ctx context.Context) ([]ListTemplatesRow, error) {
@@ -50,7 +54,7 @@ func (q *Queries) ListTemplates(ctx context.Context) ([]ListTemplatesRow, error)
 	var items []ListTemplatesRow
 	for rows.Next() {
 		var i ListTemplatesRow
-		if err := rows.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt, &i.Versions, &i.ActiveParts); err != nil {
+		if err := rows.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt, &i.Versions, &i.ActiveParts, &i.ActiveTranslations, &i.ActiveDefault); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -105,20 +109,22 @@ func (q *Queries) NextVersion(ctx context.Context, name string) (NextVersionRow,
 	return i, err
 }
 
-const insertVersionSQL = `INSERT INTO templates.template_version (name, version, parts, sample, author, comment)
-VALUES ($1, $2, $3, $4, $5, $6);`
+const insertVersionSQL = `INSERT INTO templates.template_version (name, version, parts, translations, default_language, sample, author, comment)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`
 
 type InsertVersionParams struct {
-	Name    string
-	Version int64
-	Parts   json.RawMessage
-	Sample  json.RawMessage
-	Author  string
-	Comment string
+	Name            string
+	Version         int64
+	Parts           json.RawMessage
+	Translations    json.RawMessage
+	DefaultLanguage string
+	Sample          json.RawMessage
+	Author          string
+	Comment         string
 }
 
 func (q *Queries) InsertVersion(ctx context.Context, arg InsertVersionParams) error {
-	_, err := q.db.Exec(ctx, insertVersionSQL, arg.Name, arg.Version, arg.Parts, arg.Sample, arg.Author, arg.Comment)
+	_, err := q.db.Exec(ctx, insertVersionSQL, arg.Name, arg.Version, arg.Parts, arg.Translations, arg.DefaultLanguage, arg.Sample, arg.Author, arg.Comment)
 	return err
 }
 
@@ -172,7 +178,8 @@ func (q *Queries) ListVersions(ctx context.Context, name string) ([]ListVersions
 	return items, nil
 }
 
-const getVersionSQL = `SELECT name, version, parts, sample, author, comment, created_at FROM templates.template_version
+const getVersionSQL = `SELECT name, version, parts, translations, default_language, sample, author, comment, created_at
+FROM templates.template_version
 WHERE name = $1 AND version = $2;`
 
 type GetVersionParams struct {
@@ -181,23 +188,25 @@ type GetVersionParams struct {
 }
 
 type GetVersionRow struct {
-	Name      string
-	Version   int64
-	Parts     json.RawMessage
-	Sample    json.RawMessage
-	Author    string
-	Comment   string
-	CreatedAt time.Time
+	Name            string
+	Version         int64
+	Parts           json.RawMessage
+	Translations    json.RawMessage
+	DefaultLanguage string
+	Sample          json.RawMessage
+	Author          string
+	Comment         string
+	CreatedAt       time.Time
 }
 
 func (q *Queries) GetVersion(ctx context.Context, arg GetVersionParams) (GetVersionRow, error) {
 	row := q.db.QueryRow(ctx, getVersionSQL, arg.Name, arg.Version)
 	var i GetVersionRow
-	err := row.Scan(&i.Name, &i.Version, &i.Parts, &i.Sample, &i.Author, &i.Comment, &i.CreatedAt)
+	err := row.Scan(&i.Name, &i.Version, &i.Parts, &i.Translations, &i.DefaultLanguage, &i.Sample, &i.Author, &i.Comment, &i.CreatedAt)
 	return i, err
 }
 
-const getActiveVersionSQL = `SELECT v.name, v.version, v.parts, v.sample FROM templates.template t
+const getActiveVersionSQL = `SELECT v.name, v.version, v.parts, v.translations, v.default_language FROM templates.template t
 JOIN templates.template_version v ON v.name = t.name AND v.version = t.active_version
 WHERE t.name = $1;
 
@@ -205,27 +214,30 @@ WHERE t.name = $1;
 -- for partials and the cache key.`
 
 type GetActiveVersionRow struct {
-	Name    string
-	Version int64
-	Parts   json.RawMessage
-	Sample  json.RawMessage
+	Name            string
+	Version         int64
+	Parts           json.RawMessage
+	Translations    json.RawMessage
+	DefaultLanguage string
 }
 
 func (q *Queries) GetActiveVersion(ctx context.Context, name string) (GetActiveVersionRow, error) {
 	row := q.db.QueryRow(ctx, getActiveVersionSQL, name)
 	var i GetActiveVersionRow
-	err := row.Scan(&i.Name, &i.Version, &i.Parts, &i.Sample)
+	err := row.Scan(&i.Name, &i.Version, &i.Parts, &i.Translations, &i.DefaultLanguage)
 	return i, err
 }
 
-const listActivePartialsSQL = `SELECT v.name, v.version, v.parts FROM templates.template t
+const listActivePartialsSQL = `SELECT v.name, v.version, v.parts, v.translations, v.default_language FROM templates.template t
 JOIN templates.template_version v ON v.name = t.name AND v.version = t.active_version
 WHERE t.name LIKE '\_%' ORDER BY t.name;`
 
 type ListActivePartialsRow struct {
-	Name    string
-	Version int64
-	Parts   json.RawMessage
+	Name            string
+	Version         int64
+	Parts           json.RawMessage
+	Translations    json.RawMessage
+	DefaultLanguage string
 }
 
 func (q *Queries) ListActivePartials(ctx context.Context) ([]ListActivePartialsRow, error) {
@@ -237,7 +249,7 @@ func (q *Queries) ListActivePartials(ctx context.Context) ([]ListActivePartialsR
 	var items []ListActivePartialsRow
 	for rows.Next() {
 		var i ListActivePartialsRow
-		if err := rows.Scan(&i.Name, &i.Version, &i.Parts); err != nil {
+		if err := rows.Scan(&i.Name, &i.Version, &i.Parts, &i.Translations, &i.DefaultLanguage); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

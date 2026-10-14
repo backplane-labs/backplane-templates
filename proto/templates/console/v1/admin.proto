@@ -10,39 +10,58 @@ option go_package = "github.com/backplane-labs/backplane-templates/proto/templat
 // relayed by backplane behind the operator's session. Products never
 // call it; they render through the templates.Render activity.
 service AdminService {
-  // Every template with its active version's part names.
+  // The installation's languages, for the editor.
+  rpc GetSettings(GetSettingsRequest) returns (GetSettingsResponse);
+  // Every template with its active version's parts and languages.
   rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
   // One template: its versions and the content of one of them (the
   // active one unless a version is asked for).
   rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse);
-  // Stores a new version (creating the template on first save). A part
-  // that does not parse refuses the save; the sample not rendering is a
-  // problem reported, the version still saved. The first version is
-  // activated; later ones when asked.
+  // Stores a new version with every language (creating the template on
+  // first save). A source that does not compile refuses the save; the
+  // sample not rendering is a problem reported, the version still saved.
+  // The first version is activated; later ones when asked.
   rpc SaveTemplate(SaveTemplateRequest) returns (SaveTemplateResponse);
   // Makes a version the one Render uses (a rollback is activating an
   // older one).
   rpc ActivateVersion(ActivateVersionRequest) returns (ActivateVersionResponse);
   // Removes a template with every version.
   rpc DeleteTemplate(DeleteTemplateRequest) returns (DeleteTemplateResponse);
-  // Renders parts with data on the server, with the installation's
-  // current shared pieces; nothing is stored.
+  // Renders one language of a draft with data on the server, with the
+  // installation's active shared pieces; nothing is stored.
   rpc Preview(PreviewRequest) returns (PreviewResponse);
 }
 
-// Part is one output of a template.
+// Part is one output of a template, shared by its languages.
 message Part {
   // [a-z][a-z0-9_]*: subject, text, html, title, body...
   string name = 1;
   // text or html (contextual escaping).
   string kind = 2;
-  string source = 3;
 }
 
-// Problem is what a part is wrong about.
+// Translation is one language of a template: a source per part.
+message Translation {
+  // BCP 47: en, ru, pt-BR.
+  string language = 1;
+  // Part name to Go template source.
+  map<string, string> sources = 2;
+}
+
+// Problem is what a part of a language is wrong about.
 message Problem {
-  string part = 1;
-  string message = 2;
+  string language = 1;
+  string part = 2;
+  string message = 3;
+}
+
+message GetSettingsRequest {}
+
+message GetSettingsResponse {
+  // Languages the editor offers, in order.
+  repeated string languages = 1;
+  // The language renders fall back to last.
+  string default_language = 2;
 }
 
 message ListTemplatesRequest {}
@@ -58,7 +77,11 @@ message TemplateSummary {
   int64 active_version = 3;
   int64 versions = 4;
   repeated string parts = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  repeated string languages = 6;
+  string default_language = 7;
+  // Languages of the active version with an empty part.
+  repeated string incomplete = 8;
+  google.protobuf.Timestamp updated_at = 9;
 }
 
 message GetTemplateRequest {
@@ -81,33 +104,40 @@ message VersionSummary {
   string author = 2;
   string comment = 3;
   google.protobuf.Timestamp created_at = 4;
+  repeated string languages = 5;
 }
 
 message Version {
   int64 version = 1;
   repeated Part parts = 2;
+  repeated Translation translations = 3;
+  string default_language = 4;
   // The sample data (JSON object) the editor previews with.
-  string sample = 3;
-  string author = 4;
-  string comment = 5;
-  google.protobuf.Timestamp created_at = 6;
+  string sample = 5;
+  string author = 6;
+  string comment = 7;
+  google.protobuf.Timestamp created_at = 8;
 }
 
 message SaveTemplateRequest {
   string name = 1;
   string description = 2;
   repeated Part parts = 3;
+  // At least one; every one gives a source for every part (empty allowed).
+  repeated Translation translations = 4;
+  // One of the translations.
+  string default_language = 5;
   // JSON object.
-  string sample = 4;
-  string comment = 5;
+  string sample = 6;
+  string comment = 7;
   // Activate the new version at once.
-  bool activate = 6;
+  bool activate = 8;
 }
 
 message SaveTemplateResponse {
   int64 version = 1;
   bool activated = 2;
-  // The sample not rendering, by part.
+  // The sample not rendering, by language and part.
   repeated Problem problems = 3;
 }
 
@@ -128,8 +158,11 @@ message DeleteTemplateResponse {
 
 message PreviewRequest {
   repeated Part parts = 1;
+  // The language to render: its sources and its rules (plural, numbers,
+  // dates).
+  Translation translation = 2;
   // JSON object.
-  string data = 2;
+  string data = 3;
 }
 
 message PreviewResponse {

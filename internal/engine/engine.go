@@ -1,8 +1,9 @@
-// Package engine renders a template's parts with Go templates: text/template
-// for text parts, html/template for html parts (contextual escaping), a
-// small safe function set, strict about missing data. Shared pieces are
-// other templates (named "_x") whose part of the same name is defined into
-// the set, so a part says {{template "_x" .}}.
+// Package engine renders a template's parts in one language with Go
+// templates: text/template for text parts, html/template for html parts
+// (contextual escaping), a closed function set with language-aware
+// helpers, strict about missing data, and bounded so a template cannot
+// exhaust the process. Shared pieces are other templates (named "_x")
+// whose part of the same name a part includes with {{template "_x" .}}.
 package engine
 
 import (
@@ -17,6 +18,8 @@ import (
 	texttemplate "text/template"
 	"text/template/parse"
 	"time"
+
+	"golang.org/x/text/language"
 )
 
 // Kinds of a part.
@@ -35,67 +38,40 @@ const (
 	RenderTimeout = 2 * time.Second
 )
 
-// Errors of Compile and Render; every one is final.
+// Errors of Compile and Render; every one is final but ErrBusy.
 var (
-	ErrNoParts     = errors.New("template: no parts")
-	ErrPartName    = errors.New("template: part name must be [a-z][a-z0-9_]* and unique")
-	ErrPartKind    = errors.New("template: part kind must be text or html")
-	ErrPartTooBig  = errors.New("template: part exceeds 256 KiB")
-	ErrTooMany     = errors.New("template: too many parts")
-	ErrParse       = errors.New("template: parse")
-	ErrRender      = errors.New("template: render")
-	ErrDataTooBig  = errors.New("template: data exceeds 1 MiB")
-	ErrPartialKind = errors.New("template: a shared piece needs a part of the same name")
-	ErrTooLong     = errors.New("output exceeds 1 MiB")
-	ErrTooSlow     = errors.New("template: render exceeded 2s")
+	ErrNoParts    = errors.New("template: no parts")
+	ErrPartName   = errors.New("template: part name must be [a-z][a-z0-9_]* and unique")
+	ErrPartKind   = errors.New("template: part kind must be text or html")
+	ErrPartTooBig = errors.New("template: part exceeds 256 KiB")
+	ErrTooMany    = errors.New("template: too many parts")
+	ErrParse      = errors.New("template: parse")
+	ErrRender     = errors.New("template: render")
+	ErrDataTooBig = errors.New("template: data exceeds 1 MiB")
+	ErrTooLong    = errors.New("output exceeds 1 MiB")
+	ErrTooSlow    = errors.New("template: render exceeded 2s")
+	ErrLanguage   = errors.New("template: not a language tag")
 	// ErrBusy: renders that ran past their time still hold every slot;
 	// retrying later can succeed.
 	ErrBusy = errors.New("template: too many renders running")
-	// ErrRangeLiteral: {{range N}} over a number literal is a loop the
-	// data does not bound.
-	ErrRangeLiteral = errors.New("range over a number literal is not allowed")
 )
 
-// slots bounds renders running at once, including those abandoned at
-// RenderTimeout (a Go template cannot be stopped): a runaway template
-// costs at most these goroutines, never an unbounded pile of them.
-//
-//nolint:gochecknoglobals // one bound for the process
-var slots = make(chan struct{}, max(minSlots, slotsPerCPU*runtime.GOMAXPROCS(0)))
-
-// minSlots keeps a small machine able to render a few templates at once.
-const (
-	minSlots    = 4
-	slotsPerCPU = 2
-)
-
-// limited is a buffer that refuses to grow past MaxOutputBytes.
-type limited struct{ bytes.Buffer }
-
-func (l *limited) Write(p []byte) (int, error) {
-	if l.Len()+len(p) > MaxOutputBytes {
-		return 0, ErrTooLong
-	}
-
-	return l.Buffer.Write(p) //nolint:wrapcheck // a buffer does not fail
-}
-
-// Part is one output of a template: its name, how it is escaped and its
-// source.
+// Part is one output of a template in one language: its name, how it is
+// escaped and its source.
 type Part struct {
 	Name   string `json:"name"`
 	Kind   string `json:"kind"`
-	Source string `json:"source"`
+	Source string `json:"source,omitempty"`
 }
 
-// Partial is a shared piece: a template whose parts other templates
-// include by the template's name.
+// Partial is a shared piece in the language being compiled: a template
+// whose parts other templates include by the template's name.
 type Partial struct {
 	Name  string
 	Parts []Part
 }
 
-// Compiled is a template ready to render.
+// Compiled is a template ready to render in one language.
 type Compiled struct {
 	parts []compiledPart
 }
@@ -113,6 +89,16 @@ type ProblemError struct {
 }
 
 func (p ProblemError) Error() string { return p.Part + ": " + p.Message }
+
+// ParseLanguage is the canonical BCP 47 form of a tag ("ru", "pt-BR").
+func ParseLanguage(s string) (string, error) {
+	tag, err := language.Parse(s)
+	if err != nil || s == "" {
+		return "", fmt.Errorf("%w: %q", ErrLanguage, s)
+	}
+
+	return tag.String(), nil
+}
 
 // Check validates the parts' shape without compiling.
 func Check(parts []Part) error {
@@ -159,14 +145,20 @@ func validName(s string) bool {
 	return true
 }
 
-// Compile parses every part of the template with the partials it may
-// include. Parse errors come back as ProblemErrors (one per failing part),
-// joined.
-func Compile(parts []Part, partials []Partial) (*Compiled, error) {
+// Compile parses every part of the template in lang with the partials it
+// may include and checks what it may do (see safety.go). Problems come
+// back one per failing part, joined.
+func Compile(parts []Part, partials []Partial, lang string) (*Compiled, error) {
 	if err := Check(parts); err != nil {
 		return nil, err
 	}
 
+	tag, err := language.Parse(lang)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q", ErrLanguage, lang)
+	}
+
+	fns := funcs(tag)
 	c := &Compiled{}
 
 	var problems []error
@@ -174,12 +166,10 @@ func Compile(parts []Part, partials []Partial) (*Compiled, error) {
 	for _, p := range parts {
 		part := compiledPart{name: p.Name}
 
-		var err error
-
 		if p.Kind == KindHTML {
-			part.html, err = compileHTML(p, partials)
+			part.html, err = compileHTML(p, partials, fns)
 		} else {
-			part.text, err = compileText(p, partials)
+			part.text, err = compileText(p, partials, fns)
 		}
 
 		if err != nil {
@@ -213,105 +203,101 @@ func partialSource(partial Partial, name string) (Part, bool) {
 	return Part{}, false
 }
 
-func compileText(p Part, partials []Partial) (*texttemplate.Template, error) {
-	t := texttemplate.New(p.Name).Funcs(textFuncs()).Option("missingkey=error")
+// sources are the partials' sources for part p, then p's own.
+func sources(p Part, partials []Partial) [][2]string {
+	out := make([][2]string, 0, len(partials)+1)
 
 	for _, partial := range partials {
-		src, ok := partialSource(partial, p.Name)
-		if !ok {
-			continue
-		}
-
-		if _, err := t.New(partial.Name).Parse(src.Source); err != nil {
-			return nil, fmt.Errorf("%s: %w", partial.Name, err)
+		if src, ok := partialSource(partial, p.Name); ok {
+			out = append(out, [2]string{partial.Name, src.Source})
 		}
 	}
 
-	if _, err := t.Parse(p.Source); err != nil {
-		return nil, err //nolint:wrapcheck // the parser names the part
-	}
-
-	for _, tpl := range t.Templates() {
-		if err := checkRanges(tpl.Tree); err != nil {
-			return nil, fmt.Errorf("%s: %w", tpl.Name(), err)
-		}
-	}
-
-	return t, nil
+	return append(out, [2]string{p.Name, p.Source})
 }
 
-func compileHTML(p Part, partials []Partial) (*htmltemplate.Template, error) {
-	t := htmltemplate.New(p.Name).Funcs(htmlFuncs()).Option("missingkey=error")
-
-	for _, partial := range partials {
-		src, ok := partialSource(partial, p.Name)
-		if !ok {
-			continue
-		}
-
-		if _, err := t.New(partial.Name).Parse(src.Source); err != nil {
-			return nil, fmt.Errorf("%s: %w", partial.Name, err)
-		}
-	}
-
-	if _, err := t.Parse(p.Source); err != nil {
-		return nil, err //nolint:wrapcheck // the parser names the part
-	}
-
-	for _, tpl := range t.Templates() {
-		if err := checkRanges(tpl.Tree); err != nil {
-			return nil, fmt.Errorf("%s: %w", tpl.Name(), err)
-		}
-	}
-
-	return t, nil
+// set is what text/template and html/template templates share.
+type set[T any] interface {
+	comparable
+	New(name string) T
+	Parse(text string) (T, error)
+	Lookup(name string) T
+	Templates() []T
 }
 
-// checkRanges refuses {{range N}} over a number literal anywhere in tree:
-// JSON data decodes numbers as float64, which range refuses, so a literal
-// is the one way to loop without the data bounding it.
-func checkRanges(tree *parse.Tree) error {
-	if tree == nil || tree.Root == nil {
+// build parses the sources into root (the part's own into root, the
+// partials as named templates) and checks what the set may do.
+func build[T set[T]](root T, p Part, partials []Partial, tree func(T) *parse.Tree) error {
+	var zero T
+
+	srcs := sources(p, partials)
+	for _, src := range srcs {
+		target := root
+		if src[0] != p.Name {
+			target = root.New(src[0])
+		}
+
+		if _, err := target.Parse(src[1]); err != nil {
+			return fmt.Errorf("%s: %w", src[0], err)
+		}
+	}
+
+	defined := len(root.Templates())
+	lookup := func(name string) *treeOf {
+		if t := root.Lookup(name); t != zero && tree(t) != nil {
+			return &treeOf{root: tree(t).Root, defined: defined}
+		}
+
 		return nil
 	}
 
-	return walkRanges(tree.Root)
+	return checkSet(p.Name, len(srcs), lookup)
 }
 
-func walkRanges(node parse.Node) error {
-	switch n := node.(type) {
-	case *parse.ListNode:
-		if n == nil {
-			return nil
-		}
-
-		for _, child := range n.Nodes {
-			if err := walkRanges(child); err != nil {
-				return err
-			}
-		}
-	case *parse.RangeNode:
-		if pipe := n.Pipe; pipe != nil && len(pipe.Cmds) > 0 {
-			for _, arg := range pipe.Cmds[len(pipe.Cmds)-1].Args {
-				if _, isNumber := arg.(*parse.NumberNode); isNumber {
-					return ErrRangeLiteral
-				}
-			}
-		}
-
-		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
-	case *parse.IfNode:
-		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
-	case *parse.WithNode:
-		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
+func compileText(p Part, partials []Partial, fns map[string]any) (*texttemplate.Template, error) {
+	t := texttemplate.New(p.Name).Funcs(fns).Option("missingkey=error")
+	if err := build(t, p, partials, func(t *texttemplate.Template) *parse.Tree { return t.Tree }); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return t, nil
 }
+
+func compileHTML(p Part, partials []Partial, fns map[string]any) (*htmltemplate.Template, error) {
+	t := htmltemplate.New(p.Name).Funcs(fns).Option("missingkey=error")
+	if err := build(t, p, partials, func(t *htmltemplate.Template) *parse.Tree { return t.Tree }); err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+// limited is a buffer that refuses to grow past MaxOutputBytes.
+type limited struct{ bytes.Buffer }
+
+func (l *limited) Write(p []byte) (int, error) {
+	if l.Len()+len(p) > MaxOutputBytes {
+		return 0, ErrTooLong
+	}
+
+	return l.Buffer.Write(p) //nolint:wrapcheck // a buffer does not fail
+}
+
+// slots bounds renders running at once, including those abandoned at
+// RenderTimeout (a Go template cannot be stopped): a runaway template
+// costs at most these goroutines, never an unbounded pile of them.
+//
+//nolint:gochecknoglobals // one bound for the process
+var slots = make(chan struct{}, max(minSlots, slotsPerCPU*runtime.GOMAXPROCS(0)))
+
+const (
+	minSlots    = 4
+	slotsPerCPU = 2
+)
 
 // Render executes every part with data; a failing part is a ProblemError.
 // A part's output is bounded by MaxOutputBytes and the whole render by
-// RenderTimeout: a template cannot exhaust the process with its loops.
+// RenderTimeout.
 func (c *Compiled) Render(data map[string]any) (map[string]string, error) {
 	type result struct {
 		out map[string]string
@@ -417,7 +403,8 @@ func isJoin(err error) bool {
 	return ok
 }
 
-// DecodeData parses the JSON object data of a render.
+// DecodeData parses the JSON object data of a render and bounds what a
+// template can iterate over (see safety.go).
 func DecodeData(raw []byte) (map[string]any, error) {
 	if len(raw) > MaxDataBytes {
 		return nil, ErrDataTooBig
@@ -436,98 +423,9 @@ func DecodeData(raw []byte) (map[string]any, error) {
 		data = map[string]any{}
 	}
 
+	if err := CheckData(data); err != nil {
+		return nil, err
+	}
+
 	return data, nil
-}
-
-// The function set: formatting only, nothing that reaches the process.
-func funcs() map[string]any {
-	return map[string]any{
-		"upper":   strings.ToUpper,
-		"lower":   strings.ToLower,
-		"title":   title,
-		"trim":    strings.TrimSpace,
-		"replace": strings.ReplaceAll,
-		"join":    join,
-		"default": defaultOf,
-		"date":    date,
-		"json":    toJSON,
-		"add":     func(a, b float64) float64 { return a + b },
-		"mul":     func(a, b float64) float64 { return a * b },
-		"round":   func(v float64, digits int) string { return fmt.Sprintf("%.*f", digits, v) },
-	}
-}
-
-func textFuncs() texttemplate.FuncMap { return funcs() }
-func htmlFuncs() htmltemplate.FuncMap { return funcs() }
-
-func title(s string) string {
-	words := strings.Fields(s)
-	for i, w := range words {
-		words[i] = strings.ToUpper(w[:1]) + w[1:]
-	}
-
-	return strings.Join(words, " ")
-}
-
-func join(sep string, items any) string {
-	switch v := items.(type) {
-	case []string:
-		return strings.Join(v, sep)
-	case []any:
-		parts := make([]string, len(v))
-		for i, item := range v {
-			parts[i] = fmt.Sprint(item)
-		}
-
-		return strings.Join(parts, sep)
-	default:
-		return fmt.Sprint(items)
-	}
-}
-
-func defaultOf(fallback, value any) any {
-	switch v := value.(type) {
-	case nil:
-		return fallback
-	case string:
-		if v == "" {
-			return fallback
-		}
-	case float64:
-		if v == 0 {
-			return fallback
-		}
-	case bool:
-		if !v {
-			return fallback
-		}
-	}
-
-	return value
-}
-
-// date formats a time.Time or an RFC 3339 string with a Go layout.
-func date(layout string, value any) (string, error) {
-	switch v := value.(type) {
-	case time.Time:
-		return v.Format(layout), nil
-	case string:
-		t, err := time.Parse(time.RFC3339Nano, v)
-		if err != nil {
-			return "", fmt.Errorf("date: %w", err)
-		}
-
-		return t.Format(layout), nil
-	default:
-		return "", fmt.Errorf("date: %T is not a time", value) //nolint:err113 // formatted
-	}
-}
-
-func toJSON(v any) (string, error) {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "", fmt.Errorf("json: %w", err)
-	}
-
-	return string(b), nil
 }

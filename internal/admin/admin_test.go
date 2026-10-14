@@ -64,7 +64,8 @@ func isolatedDatabase(t *testing.T) string {
 }
 
 type liveConfig struct {
-	DefaultLocale config.Live[string] `json:"default_locale" schemapb:"default=en"`
+	Languages       config.Live[[]string] `json:"languages"`
+	DefaultLanguage config.Live[string]   `json:"default_language" schemapb:"default=en"`
 }
 
 type fixture struct {
@@ -77,9 +78,9 @@ func start(t *testing.T) *fixture {
 
 	h := backplanetest.New(t, backplanetest.Name("templates"))
 	st := deps.NewDependency(h.Root(), store.New(postgres.Config{DSN: config.Secret(isolatedDatabase(t))}))
-	live := backplanetest.Config[liveConfig](t, nil)
+	live := backplanetest.Config[liveConfig](t, map[string]string{"LANGUAGES": `["ru","de","bogus tag"]`})
 
-	tp, err := templates.New(h.Root(), st, templates.Settings{DefaultLocale: live.DefaultLocale})
+	tp, err := templates.New(h.Root(), st, templates.Settings{Languages: live.Languages, DefaultLanguage: live.DefaultLanguage})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,132 +96,154 @@ func start(t *testing.T) *fixture {
 	return &fixture{h: h, admin: a}
 }
 
-func parts(subject, text, html string) []*templatesconsolev1.Part {
-	out := []*templatesconsolev1.Part{{Name: "subject", Kind: "text", Source: subject}, {Name: "text", Kind: "text", Source: text}}
-	if html != "" {
-		out = append(out, &templatesconsolev1.Part{Name: "html", Kind: "html", Source: html})
-	}
-
-	return out
-}
-
 func (f *fixture) render(t *testing.T, in templates.RenderIn) (templates.RenderOut, error) {
 	t.Helper()
 
 	return backplanetest.Activity[templates.RenderIn, templates.RenderOut](t.Context(), f.h, "Render", in)
 }
 
-// Templates are saved as versions, previewed, activated and rendered with
-// shared pieces and locale variants; the cache follows activation.
+var mail = []*templatesconsolev1.Part{{Name: "subject", Kind: "text"}, {Name: "html", Kind: "html"}}
+
+func tr(lang, subject, html string) *templatesconsolev1.Translation {
+	return &templatesconsolev1.Translation{Language: lang, Sources: map[string]string{"subject": subject, "html": html}}
+}
+
+func (f *fixture) save(t *testing.T, req *templatesconsolev1.SaveTemplateRequest) *templatesconsolev1.SaveTemplateResponse {
+	t.Helper()
+
+	out, err := f.admin.SaveTemplate(t.Context(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return out
+}
+
+// Templates are saved with their languages as one version, previewed per
+// language, activated, and rendered in the language asked with fallback.
 func TestTemplates(t *testing.T) {
 	t.Parallel()
 
 	f := start(t)
 	ctx := t.Context()
 
-	// A shared piece first, then a template using it; the first version activates.
-	if _, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{
-		Name:  "_footer",
-		Parts: []*templatesconsolev1.Part{{Name: "text", Kind: "text", Source: "-- {{.shop}}"}, {Name: "html", Kind: "html", Source: "<p>{{.shop}}</p>"}},
-	}); err != nil {
-		t.Fatal(err)
+	settings, err := f.admin.GetSettings(ctx, &templatesconsolev1.GetSettingsRequest{})
+	if err != nil || strings.Join(settings.GetLanguages(), ",") != "en,ru,de" || settings.GetDefaultLanguage() != "en" {
+		t.Fatalf("settings: %v %v", settings, err)
 	}
 
-	saved, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{
-		Name: "order.placed", Description: "Order confirmation",
-		Parts:  parts("Order {{.id}}", "Hi {{.name}}\n{{template \"_footer\" .}}", "<b>{{.name}}</b>{{template \"_footer\" .}}"),
-		Sample: `{"id": 42, "name": "Ann", "shop": "Shop"}`, Comment: "initial",
+	// A shared piece in two languages, then a template using it.
+	f.save(t, &templatesconsolev1.SaveTemplateRequest{
+		Name: "_footer", DefaultLanguage: "en",
+		Parts: []*templatesconsolev1.Part{{Name: "html", Kind: "html"}},
+		Translations: []*templatesconsolev1.Translation{
+			{Language: "en", Sources: map[string]string{"html": "<p>{{.shop}}</p>"}},
+			{Language: "ru", Sources: map[string]string{"html": "<p>Ваш {{.shop}}</p>"}},
+		},
 	})
-	if err != nil || saved.GetVersion() != 1 || !saved.GetActivated() || len(saved.GetProblems()) != 0 {
-		t.Fatalf("save: %v %v", saved, err)
-	}
 
-	out, err := f.render(t, templates.RenderIn{Template: "order.placed", Data: map[string]any{"id": 7, "name": "<b>", "shop": "S&P"}})
-	if err != nil || out.Version != 1 || out.Template != "order.placed" || out.Parts["subject"] != "Order 7" ||
-		out.Parts["text"] != "Hi <b>\n-- S&P" || out.Parts["html"] != "<b>&lt;b&gt;</b><p>S&amp;P</p>" {
-		t.Fatalf("render: %+v %v", out, err)
-	}
-
-	// A second version with a sample problem is saved, not activated; the
-	// render still uses v1 until activation, then the cache follows.
-	saved, err = f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{
-		Name: "order.placed", Description: "Order confirmation", Parts: parts("Order {{.id}} ({{.total}})", "Hi", ""),
-		Sample: `{"id": 1}`,
+	saved := f.save(t, &templatesconsolev1.SaveTemplateRequest{
+		Name: "order.placed", Description: "Order confirmation", DefaultLanguage: "en", Parts: mail,
+		Translations: []*templatesconsolev1.Translation{
+			tr("en", `{{.n}} {{plural .n "item" "items"}}`, `<b>{{.name}}</b>{{template "_footer" .}}`),
+			tr("ru", `{{.n}} {{plural .n "товар" "товара" "товаров"}}`, `<b>{{.name}}</b>{{template "_footer" .}}`),
+		},
+		Sample: `{"n": 2, "name": "Ann", "shop": "Shop"}`, Comment: "initial",
 	})
-	if err != nil || saved.GetVersion() != 2 || saved.GetActivated() || len(saved.GetProblems()) != 1 || saved.GetProblems()[0].GetPart() != "subject" {
-		t.Fatalf("save v2: %v %v", saved, err)
+	if saved.GetVersion() != 1 || !saved.GetActivated() || len(saved.GetProblems()) != 0 {
+		t.Fatalf("save: %v", saved)
 	}
 
-	if still, err := f.render(t, templates.RenderIn{Template: "order.placed", Data: map[string]any{"id": 1, "name": "x", "shop": "s"}}); err != nil || still.Version != 1 {
-		t.Fatalf("still v1: %+v %v", still, err)
+	data := map[string]any{"n": 5, "name": "<b>", "shop": "S&P"}
+
+	for asked, want := range map[string][2]string{
+		"ru":    {"ru", "5 товаров"},
+		"ru-RU": {"ru", "5 товаров"},
+		"de":    {"en", "5 items"},
+		"":      {"en", "5 items"},
+		"x!":    {"en", "5 items"},
+	} {
+		out, err := f.render(t, templates.RenderIn{Template: "order.placed", Language: asked, Data: data})
+		if err != nil || out.Language != want[0] || out.Parts["subject"] != want[1] || out.Version != 1 {
+			t.Fatalf("render %q: %+v %v", asked, out, err)
+		}
+	}
+
+	ru, _ := f.render(t, templates.RenderIn{Template: "order.placed", Language: "ru", Data: data})
+	if ru.Parts["html"] != "<b>&lt;b&gt;</b><p>Ваш S&amp;P</p>" {
+		t.Fatalf("ru html: %q", ru.Parts["html"])
+	}
+
+	// A second version: not activated, a sample problem in one language.
+	saved = f.save(t, &templatesconsolev1.SaveTemplateRequest{
+		Name: "order.placed", Description: "Order confirmation", DefaultLanguage: "en", Parts: mail,
+		Translations: []*templatesconsolev1.Translation{tr("en", "{{.total}}", "x"), tr("ru", "{{.n}}", "x")},
+		Sample:       `{"n": 1}`,
+	})
+	if saved.GetVersion() != 2 || saved.GetActivated() || len(saved.GetProblems()) != 1 ||
+		saved.GetProblems()[0].GetLanguage() != "en" || saved.GetProblems()[0].GetPart() != "subject" {
+		t.Fatalf("save v2: %v", saved)
+	}
+
+	if out, err := f.render(t, templates.RenderIn{Template: "order.placed", Data: data}); err != nil || out.Version != 1 {
+		t.Fatalf("still v1: %+v %v", out, err)
 	}
 
 	if _, err := f.admin.ActivateVersion(ctx, &templatesconsolev1.ActivateVersionRequest{Name: "order.placed", Version: 2}); err != nil {
 		t.Fatal(err)
 	}
 
-	out, err = f.render(t, templates.RenderIn{Template: "order.placed", Data: map[string]any{"id": 1, "total": "9.99"}})
-	if err != nil || out.Version != 2 || out.Parts["subject"] != "Order 1 (9.99)" {
+	if out, err := f.render(t, templates.RenderIn{Template: "order.placed", Language: "ru", Data: data}); err != nil || out.Version != 2 ||
+		out.Parts["subject"] != "5" {
 		t.Fatalf("v2: %+v %v", out, err)
 	}
 
 	// Missing data is a final failure naming the part.
-	if _, err := f.render(t, templates.RenderIn{Template: "order.placed", Data: map[string]any{"id": 1}}); err == nil || !strings.Contains(err.Error(), "subject") {
+	if _, err := f.render(t, templates.RenderIn{Template: "order.placed", Data: data}); err == nil || !strings.Contains(err.Error(), "subject") {
 		t.Fatalf("missing: %v", err)
 	}
 
-	// Locale variants: name@ru, then name@default (en), then name.
-	for _, name := range []string{"order.placed@ru", "order.placed@en"} {
-		if _, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{Name: name, Parts: parts(name, "x", "")}); err != nil {
-			t.Fatal(err)
+	// Refused saves: bad name, shape, languages, sources that do not compile.
+	for what, req := range map[string]*templatesconsolev1.SaveTemplateRequest{
+		"name":    {Name: "Bad Name", DefaultLanguage: "en", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("en", "a", "b")}},
+		"no lang": {Name: "x", DefaultLanguage: "en", Parts: mail},
+		"default": {Name: "x", DefaultLanguage: "de", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("en", "a", "b")}},
+		"tag":     {Name: "x", DefaultLanguage: "EN", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("EN", "a", "b")}},
+		"missing": {Name: "x", DefaultLanguage: "en", Parts: mail, Translations: []*templatesconsolev1.Translation{{Language: "en", Sources: map[string]string{"subject": "a"}}}},
+		"compile": {Name: "x", DefaultLanguage: "en", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("en", "{{.x", "b")}},
+		"range":   {Name: "x", DefaultLanguage: "en", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("en", "{{range 9}}{{end}}", "b")}},
+		"twice":   {Name: "x", DefaultLanguage: "en", Parts: mail, Translations: []*templatesconsolev1.Translation{tr("en", "a", "b"), tr("en", "a", "b")}},
+	} {
+		if _, err := f.admin.SaveTemplate(ctx, req); status.Code(err) != codes.InvalidArgument {
+			t.Fatalf("%s: %v", what, err)
 		}
 	}
 
-	for locale, want := range map[string]string{"ru": "order.placed@ru", "de": "order.placed@en", "": "order.placed@en"} {
-		if variant, err := f.render(t, templates.RenderIn{Template: "order.placed", Locale: locale}); err != nil || variant.Template != want {
-			t.Fatalf("locale %q: %+v %v", locale, variant, err)
-		}
-	}
-
-	// Unknown template, bad name, a part that does not parse.
-	if _, err := f.render(t, templates.RenderIn{Template: "nope"}); err == nil {
-		t.Fatal("unknown rendered")
-	}
-
-	if _, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{Name: "Bad Name", Parts: parts("x", "y", "")}); status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("bad name: %v", err)
-	}
-
-	if _, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{Name: "broken", Parts: parts("{{.x", "y", "")}); status.Code(err) != codes.InvalidArgument || !strings.Contains(err.Error(), "subject") {
-		t.Fatalf("parse: %v", err)
-	}
-
-	// Preview renders what it can and reports the rest; the list and get show the state.
-	preview, err := f.admin.Preview(ctx, &templatesconsolev1.PreviewRequest{Parts: parts("A {{.a}}", "B {{.b}}", ""), Data: `{"a": 1}`})
-	if err != nil || preview.GetParts()["subject"] != "A 1" || len(preview.GetProblems()) != 1 || preview.GetProblems()[0].GetPart() != "text" {
+	// Preview renders one language and reports the rest.
+	preview, err := f.admin.Preview(ctx, &templatesconsolev1.PreviewRequest{
+		Parts: mail, Translation: tr("ru", `{{plural .n "товар" "товара" "товаров"}}`, "{{.missing}}"), Data: `{"n": 3}`,
+	})
+	if err != nil || preview.GetParts()["subject"] != "товара" || len(preview.GetProblems()) != 1 || preview.GetProblems()[0].GetPart() != "html" {
 		t.Fatalf("preview: %v %v", preview, err)
 	}
 
 	list, err := f.admin.ListTemplates(ctx, &templatesconsolev1.ListTemplatesRequest{})
-	if err != nil || len(list.GetTemplates()) != 4 || list.GetTemplates()[0].GetName() != "_footer" {
+	if err != nil || len(list.GetTemplates()) != 2 || list.GetTemplates()[1].GetName() != "order.placed" ||
+		strings.Join(list.GetTemplates()[1].GetLanguages(), ",") != "en,ru" {
 		t.Fatalf("list: %v %v", list, err)
 	}
 
-	got, err := f.admin.GetTemplate(ctx, &templatesconsolev1.GetTemplateRequest{Name: "order.placed"})
-	if err != nil || got.GetActiveVersion() != 2 || len(got.GetVersions()) != 2 || got.GetContent().GetVersion() != 2 ||
-		got.GetDescription() != "Order confirmation" || got.GetContent().GetSample() != `{"id": 1}` {
-		t.Fatalf("get: %v %v", got, err)
+	got, err := f.admin.GetTemplate(ctx, &templatesconsolev1.GetTemplateRequest{Name: "order.placed", Version: 1})
+	if err != nil || got.GetActiveVersion() != 2 || len(got.GetVersions()) != 2 || got.GetContent().GetComment() != "initial" ||
+		len(got.GetContent().GetTranslations()) != 2 || got.GetContent().GetTranslations()[1].GetLanguage() != "ru" {
+		t.Fatalf("get v1: %v %v", got, err)
 	}
 
-	if old, err := f.admin.GetTemplate(ctx, &templatesconsolev1.GetTemplateRequest{Name: "order.placed", Version: 1}); err != nil || old.GetContent().GetComment() != "initial" {
-		t.Fatalf("get v1: %v %v", old, err)
-	}
-
-	if del, err := f.admin.DeleteTemplate(ctx, &templatesconsolev1.DeleteTemplateRequest{Name: "order.placed@ru"}); err != nil || !del.GetDeleted() {
+	if del, err := f.admin.DeleteTemplate(ctx, &templatesconsolev1.DeleteTemplateRequest{Name: "order.placed"}); err != nil || !del.GetDeleted() {
 		t.Fatalf("delete: %v %v", del, err)
 	}
 
-	if _, err := f.admin.GetTemplate(ctx, &templatesconsolev1.GetTemplateRequest{Name: "order.placed@ru"}); status.Code(err) != codes.NotFound {
+	if _, err := f.admin.GetTemplate(ctx, &templatesconsolev1.GetTemplateRequest{Name: "order.placed"}); status.Code(err) != codes.NotFound {
 		t.Fatalf("deleted: %v", err)
 	}
 }
@@ -233,23 +256,21 @@ func TestCacheFollowsActivation(t *testing.T) {
 	f := start(t)
 	ctx := t.Context()
 
-	save := func(name, text string, activate bool) {
+	text := []*templatesconsolev1.Part{{Name: "text", Kind: "text"}}
+	save := func(name, src string, activate bool) {
 		t.Helper()
-
-		_, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{
-			Name: name, Parts: []*templatesconsolev1.Part{{Name: "text", Kind: "text", Source: text}}, Activate: activate,
+		f.save(t, &templatesconsolev1.SaveTemplateRequest{
+			Name: name, DefaultLanguage: "en", Parts: text, Activate: activate,
+			Translations: []*templatesconsolev1.Translation{{Language: "en", Sources: map[string]string{"text": src}}},
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
 	}
 
 	save("_sig", "v1", true)
 	save("_draft", "never", true)
-	save("_draft", "x", false) // _draft v2 inactive; v1 stays
+	save("_draft", "x", false)
 	save("note", `{{template "_sig" .}}`, true)
 
-	text := func() string {
+	render := func() string {
 		t.Helper()
 
 		out, err := f.render(t, templates.RenderIn{Template: "note"})
@@ -260,19 +281,19 @@ func TestCacheFollowsActivation(t *testing.T) {
 		return out.Parts["text"]
 	}
 
-	if got := text(); got != "v1" {
+	if got := render(); got != "v1" {
 		t.Fatalf("first: %q", got)
 	}
 
 	save("_sig", "v2", true)
 
-	if got := text(); got != "v2" {
+	if got := render(); got != "v2" {
 		t.Fatalf("after partial activation: %q", got)
 	}
 
 	save("note", `[{{template "_sig" .}}]`, false)
 
-	if got := text(); got != "v2" {
+	if got := render(); got != "v2" {
 		t.Fatalf("inactive template version used: %q", got)
 	}
 
@@ -280,7 +301,7 @@ func TestCacheFollowsActivation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := text(); got != "[v2]" {
+	if got := render(); got != "[v2]" {
 		t.Fatalf("after template activation: %q", got)
 	}
 }

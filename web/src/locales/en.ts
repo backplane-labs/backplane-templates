@@ -1,7 +1,7 @@
 export default {
   templates: 'Templates', title: 'Message templates', description: 'Templates of this installation: authored and previewed here, rendered for products by templates.Render.',
   refresh: 'Refresh', loading: 'Loading', error: 'Could not load. Check the connection and the service.',
-  newTemplate: 'New template', name: 'Name', nameHelp: 'Dotted lower-case words, e.g. order.placed; a locale variant is order.placed@ru; a shared piece starts with _ and is included with {{template "_footer" .}}.',
+  newTemplate: 'New template', name: 'Name', nameHelp: 'Dotted lower-case words, e.g. order.placed; a shared piece starts with _ and is included with {{template "_footer" .}} in the same language.',
   descriptionLabel: 'Description', parts: 'Parts', active: 'Active', versions: 'Versions', updated: 'Updated', noTemplates: 'No template yet.', notActivated: 'Not activated',
   open: 'Open', edit: 'Edit', back: 'Back to templates',
   part: 'Part', partName: 'Part name', kind: 'Kind', text: 'text', html: 'html', addPart: 'Add part', removePart: 'Remove {{name}}', source: 'Source of {{name}}',
@@ -14,7 +14,10 @@ export default {
   version: 'Version', author: 'Author', created: 'Created', activateVersion: 'Activate', activateTitle: 'Activate version {{version}}?', activateHelp: 'Renders use it from now on; nothing else changes.',
   activated: 'Version {{version}} is active.', viewVersion: 'View', diff: 'Diff against the draft', diffOf: '{{part}}: version {{version}} (left) against the draft (right)', loadVersion: 'Load into the editor',
   delete: 'Delete', deleteTitle: 'Delete {{name}}?', deleteHelp: 'Every version goes; renders of it fail from now on.', deleted: 'Deleted.',
-  functions: 'Functions', functionsHelp: 'upper, lower, title, trim, replace, join, default, date, json, add, mul, round; a missing field is an error, not an empty string.',
+  functions: 'Functions', functionsHelp: 'upper, lower, title, trim, replace, join, default, json, add, mul, round, date LAYOUT t; by language: plural n "one" "other" (or "one" "few" "many" [other]), number n [digits], longdate t, monthname t, weekday t. A missing field is an error, not an empty string; range iterates only over data, two deep.',
+  languages: 'Languages', language: 'Language', addLanguage: 'Add language', languageTag: 'Language tag, e.g. pt-BR', removeLanguage: 'Remove {{language}}', defaultLanguage: 'Default', makeDefault: 'Make default',
+  languageHelp: 'Every language has every part. Render picks the asked language, then its base (pt for pt-BR), then the default.', untranslated: 'Untranslated: empty or the same as {{language}}',
+  incomplete: 'Incomplete: {{languages}}', copyOf: 'Starts as a copy of {{language}}.', invalidTag: 'Not a language tag.', previewIn: 'Preview in {{language}}',
   missing: 'Page not found', standalone: 'Standalone · local fixtures', embedded: 'Embedded in Backplane', light: 'Light theme', dark: 'Dark theme',
   variables: 'Variables', untitled: 'untitled', exists: 'A template with this name exists: open it instead.',
 };

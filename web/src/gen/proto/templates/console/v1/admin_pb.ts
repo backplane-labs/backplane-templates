@@ -12,10 +12,10 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file proto/templates/console/v1/admin.proto.
  */
 export const file_proto_templates_console_v1_admin: GenFile = /*@__PURE__*/
-  fileDesc("CiZwcm90by90ZW1wbGF0ZXMvY29uc29sZS92MS9hZG1pbi5wcm90bxIUdGVtcGxhdGVzLmNvbnNvbGUudjEiMgoEUGFydBIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkSDgoGc291cmNlGAMgASgJIigKB1Byb2JsZW0SDAoEcGFydBgBIAEoCRIPCgdtZXNzYWdlGAIgASgJIhYKFExpc3RUZW1wbGF0ZXNSZXF1ZXN0IlEKFUxpc3RUZW1wbGF0ZXNSZXNwb25zZRI4Cgl0ZW1wbGF0ZXMYASADKAsyJS50ZW1wbGF0ZXMuY29uc29sZS52MS5UZW1wbGF0ZVN1bW1hcnkinQEKD1RlbXBsYXRlU3VtbWFyeRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEhYKDmFjdGl2ZV92ZXJzaW9uGAMgASgDEhAKCHZlcnNpb25zGAQgASgDEg0KBXBhcnRzGAUgAygJEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjMKEkdldFRlbXBsYXRlUmVxdWVzdBIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAMiuAEKE0dldFRlbXBsYXRlUmVzcG9uc2USDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIWCg5hY3RpdmVfdmVyc2lvbhgDIAEoAxI2Cgh2ZXJzaW9ucxgEIAMoCzIkLnRlbXBsYXRlcy5jb25zb2xlLnYxLlZlcnNpb25TdW1tYXJ5Ei4KB2NvbnRlbnQYBSABKAsyHS50ZW1wbGF0ZXMuY29uc29sZS52MS5WZXJzaW9uInIKDlZlcnNpb25TdW1tYXJ5Eg8KB3ZlcnNpb24YASABKAMSDgoGYXV0aG9yGAIgASgJEg8KB2NvbW1lbnQYAyABKAkSLgoKY3JlYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAipgEKB1ZlcnNpb24SDwoHdmVyc2lvbhgBIAEoAxIpCgVwYXJ0cxgCIAMoCzIaLnRlbXBsYXRlcy5jb25zb2xlLnYxLlBhcnQSDgoGc2FtcGxlGAMgASgJEg4KBmF1dGhvchgEIAEoCRIPCgdjb21tZW50GAUgASgJEi4KCmNyZWF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpYBChNTYXZlVGVtcGxhdGVSZXF1ZXN0EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSKQoFcGFydHMYAyADKAsyGi50ZW1wbGF0ZXMuY29uc29sZS52MS5QYXJ0Eg4KBnNhbXBsZRgEIAEoCRIPCgdjb21tZW50GAUgASgJEhAKCGFjdGl2YXRlGAYgASgIImsKFFNhdmVUZW1wbGF0ZVJlc3BvbnNlEg8KB3ZlcnNpb24YASABKAMSEQoJYWN0aXZhdGVkGAIgASgIEi8KCHByb2JsZW1zGAMgAygLMh0udGVtcGxhdGVzLmNvbnNvbGUudjEuUHJvYmxlbSI3ChZBY3RpdmF0ZVZlcnNpb25SZXF1ZXN0EgwKBG5hbWUYASABKAkSDwoHdmVyc2lvbhgCIAEoAyIZChdBY3RpdmF0ZVZlcnNpb25SZXNwb25zZSIlChVEZWxldGVUZW1wbGF0ZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSIpChZEZWxldGVUZW1wbGF0ZVJlc3BvbnNlEg8KB2RlbGV0ZWQYASABKAgiSQoOUHJldmlld1JlcXVlc3QSKQoFcGFydHMYASADKAsyGi50ZW1wbGF0ZXMuY29uc29sZS52MS5QYXJ0EgwKBGRhdGEYAiABKAkisQEKD1ByZXZpZXdSZXNwb25zZRI/CgVwYXJ0cxgBIAMoCzIwLnRlbXBsYXRlcy5jb25zb2xlLnYxLlByZXZpZXdSZXNwb25zZS5QYXJ0c0VudHJ5Ei8KCHByb2JsZW1zGAIgAygLMh0udGVtcGxhdGVzLmNvbnNvbGUudjEuUHJvYmxlbRosCgpQYXJ0c0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEy+AQKDEFkbWluU2VydmljZRJoCg1MaXN0VGVtcGxhdGVzEioudGVtcGxhdGVzLmNvbnNvbGUudjEuTGlzdFRlbXBsYXRlc1JlcXVlc3QaKy50ZW1wbGF0ZXMuY29uc29sZS52MS5MaXN0VGVtcGxhdGVzUmVzcG9uc2USYgoLR2V0VGVtcGxhdGUSKC50ZW1wbGF0ZXMuY29uc29sZS52MS5HZXRUZW1wbGF0ZVJlcXVlc3QaKS50ZW1wbGF0ZXMuY29uc29sZS52MS5HZXRUZW1wbGF0ZVJlc3BvbnNlEmUKDFNhdmVUZW1wbGF0ZRIpLnRlbXBsYXRlcy5jb25zb2xlLnYxLlNhdmVUZW1wbGF0ZVJlcXVlc3QaKi50ZW1wbGF0ZXMuY29uc29sZS52MS5TYXZlVGVtcGxhdGVSZXNwb25zZRJuCg9BY3RpdmF0ZVZlcnNpb24SLC50ZW1wbGF0ZXMuY29uc29sZS52MS5BY3RpdmF0ZVZlcnNpb25SZXF1ZXN0Gi0udGVtcGxhdGVzLmNvbnNvbGUudjEuQWN0aXZhdGVWZXJzaW9uUmVzcG9uc2USawoORGVsZXRlVGVtcGxhdGUSKy50ZW1wbGF0ZXMuY29uc29sZS52MS5EZWxldGVUZW1wbGF0ZVJlcXVlc3QaLC50ZW1wbGF0ZXMuY29uc29sZS52MS5EZWxldGVUZW1wbGF0ZVJlc3BvbnNlElYKB1ByZXZpZXcSJC50ZW1wbGF0ZXMuY29uc29sZS52MS5QcmV2aWV3UmVxdWVzdBolLnRlbXBsYXRlcy5jb25zb2xlLnYxLlByZXZpZXdSZXNwb25zZUJdWltnaXRodWIuY29tL2JhY2twbGFuZS1sYWJzL2JhY2twbGFuZS10ZW1wbGF0ZXMvcHJvdG8vdGVtcGxhdGVzL2NvbnNvbGUvdjE7dGVtcGxhdGVzY29uc29sZXYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("CiZwcm90by90ZW1wbGF0ZXMvY29uc29sZS92MS9hZG1pbi5wcm90bxIUdGVtcGxhdGVzLmNvbnNvbGUudjEiIgoEUGFydBIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkikAEKC1RyYW5zbGF0aW9uEhAKCGxhbmd1YWdlGAEgASgJEj8KB3NvdXJjZXMYAiADKAsyLi50ZW1wbGF0ZXMuY29uc29sZS52MS5UcmFuc2xhdGlvbi5Tb3VyY2VzRW50cnkaLgoMU291cmNlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOgoHUHJvYmxlbRIQCghsYW5ndWFnZRgBIAEoCRIMCgRwYXJ0GAIgASgJEg8KB21lc3NhZ2UYAyABKAkiFAoSR2V0U2V0dGluZ3NSZXF1ZXN0IkIKE0dldFNldHRpbmdzUmVzcG9uc2USEQoJbGFuZ3VhZ2VzGAEgAygJEhgKEGRlZmF1bHRfbGFuZ3VhZ2UYAiABKAkiFgoUTGlzdFRlbXBsYXRlc1JlcXVlc3QiUQoVTGlzdFRlbXBsYXRlc1Jlc3BvbnNlEjgKCXRlbXBsYXRlcxgBIAMoCzIlLnRlbXBsYXRlcy5jb25zb2xlLnYxLlRlbXBsYXRlU3VtbWFyeSLeAQoPVGVtcGxhdGVTdW1tYXJ5EgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSFgoOYWN0aXZlX3ZlcnNpb24YAyABKAMSEAoIdmVyc2lvbnMYBCABKAMSDQoFcGFydHMYBSADKAkSEQoJbGFuZ3VhZ2VzGAYgAygJEhgKEGRlZmF1bHRfbGFuZ3VhZ2UYByABKAkSEgoKaW5jb21wbGV0ZRgIIAMoCRIuCgp1cGRhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIzChJHZXRUZW1wbGF0ZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRIPCgd2ZXJzaW9uGAIgASgDIrgBChNHZXRUZW1wbGF0ZVJlc3BvbnNlEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSFgoOYWN0aXZlX3ZlcnNpb24YAyABKAMSNgoIdmVyc2lvbnMYBCADKAsyJC50ZW1wbGF0ZXMuY29uc29sZS52MS5WZXJzaW9uU3VtbWFyeRIuCgdjb250ZW50GAUgASgLMh0udGVtcGxhdGVzLmNvbnNvbGUudjEuVmVyc2lvbiKFAQoOVmVyc2lvblN1bW1hcnkSDwoHdmVyc2lvbhgBIAEoAxIOCgZhdXRob3IYAiABKAkSDwoHY29tbWVudBgDIAEoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglsYW5ndWFnZXMYBSADKAki+QEKB1ZlcnNpb24SDwoHdmVyc2lvbhgBIAEoAxIpCgVwYXJ0cxgCIAMoCzIaLnRlbXBsYXRlcy5jb25zb2xlLnYxLlBhcnQSNwoMdHJhbnNsYXRpb25zGAMgAygLMiEudGVtcGxhdGVzLmNvbnNvbGUudjEuVHJhbnNsYXRpb24SGAoQZGVmYXVsdF9sYW5ndWFnZRgEIAEoCRIOCgZzYW1wbGUYBSABKAkSDgoGYXV0aG9yGAYgASgJEg8KB2NvbW1lbnQYByABKAkSLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi6QEKE1NhdmVUZW1wbGF0ZVJlcXVlc3QSDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIpCgVwYXJ0cxgDIAMoCzIaLnRlbXBsYXRlcy5jb25zb2xlLnYxLlBhcnQSNwoMdHJhbnNsYXRpb25zGAQgAygLMiEudGVtcGxhdGVzLmNvbnNvbGUudjEuVHJhbnNsYXRpb24SGAoQZGVmYXVsdF9sYW5ndWFnZRgFIAEoCRIOCgZzYW1wbGUYBiABKAkSDwoHY29tbWVudBgHIAEoCRIQCghhY3RpdmF0ZRgIIAEoCCJrChRTYXZlVGVtcGxhdGVSZXNwb25zZRIPCgd2ZXJzaW9uGAEgASgDEhEKCWFjdGl2YXRlZBgCIAEoCBIvCghwcm9ibGVtcxgDIAMoCzIdLnRlbXBsYXRlcy5jb25zb2xlLnYxLlByb2JsZW0iNwoWQWN0aXZhdGVWZXJzaW9uUmVxdWVzdBIMCgRuYW1lGAEgASgJEg8KB3ZlcnNpb24YAiABKAMiGQoXQWN0aXZhdGVWZXJzaW9uUmVzcG9uc2UiJQoVRGVsZXRlVGVtcGxhdGVSZXF1ZXN0EgwKBG5hbWUYASABKAkiKQoWRGVsZXRlVGVtcGxhdGVSZXNwb25zZRIPCgdkZWxldGVkGAEgASgIIoEBCg5QcmV2aWV3UmVxdWVzdBIpCgVwYXJ0cxgBIAMoCzIaLnRlbXBsYXRlcy5jb25zb2xlLnYxLlBhcnQSNgoLdHJhbnNsYXRpb24YAiABKAsyIS50ZW1wbGF0ZXMuY29uc29sZS52MS5UcmFuc2xhdGlvbhIMCgRkYXRhGAMgASgJIrEBCg9QcmV2aWV3UmVzcG9uc2USPwoFcGFydHMYASADKAsyMC50ZW1wbGF0ZXMuY29uc29sZS52MS5QcmV2aWV3UmVzcG9uc2UuUGFydHNFbnRyeRIvCghwcm9ibGVtcxgCIAMoCzIdLnRlbXBsYXRlcy5jb25zb2xlLnYxLlByb2JsZW0aLAoKUGFydHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBMtwFCgxBZG1pblNlcnZpY2USYgoLR2V0U2V0dGluZ3MSKC50ZW1wbGF0ZXMuY29uc29sZS52MS5HZXRTZXR0aW5nc1JlcXVlc3QaKS50ZW1wbGF0ZXMuY29uc29sZS52MS5HZXRTZXR0aW5nc1Jlc3BvbnNlEmgKDUxpc3RUZW1wbGF0ZXMSKi50ZW1wbGF0ZXMuY29uc29sZS52MS5MaXN0VGVtcGxhdGVzUmVxdWVzdBorLnRlbXBsYXRlcy5jb25zb2xlLnYxLkxpc3RUZW1wbGF0ZXNSZXNwb25zZRJiCgtHZXRUZW1wbGF0ZRIoLnRlbXBsYXRlcy5jb25zb2xlLnYxLkdldFRlbXBsYXRlUmVxdWVzdBopLnRlbXBsYXRlcy5jb25zb2xlLnYxLkdldFRlbXBsYXRlUmVzcG9uc2USZQoMU2F2ZVRlbXBsYXRlEikudGVtcGxhdGVzLmNvbnNvbGUudjEuU2F2ZVRlbXBsYXRlUmVxdWVzdBoqLnRlbXBsYXRlcy5jb25zb2xlLnYxLlNhdmVUZW1wbGF0ZVJlc3BvbnNlEm4KD0FjdGl2YXRlVmVyc2lvbhIsLnRlbXBsYXRlcy5jb25zb2xlLnYxLkFjdGl2YXRlVmVyc2lvblJlcXVlc3QaLS50ZW1wbGF0ZXMuY29uc29sZS52MS5BY3RpdmF0ZVZlcnNpb25SZXNwb25zZRJrCg5EZWxldGVUZW1wbGF0ZRIrLnRlbXBsYXRlcy5jb25zb2xlLnYxLkRlbGV0ZVRlbXBsYXRlUmVxdWVzdBosLnRlbXBsYXRlcy5jb25zb2xlLnYxLkRlbGV0ZVRlbXBsYXRlUmVzcG9uc2USVgoHUHJldmlldxIkLnRlbXBsYXRlcy5jb25zb2xlLnYxLlByZXZpZXdSZXF1ZXN0GiUudGVtcGxhdGVzLmNvbnNvbGUudjEuUHJldmlld1Jlc3BvbnNlQl1aW2dpdGh1Yi5jb20vYmFja3BsYW5lLWxhYnMvYmFja3BsYW5lLXRlbXBsYXRlcy9wcm90by90ZW1wbGF0ZXMvY29uc29sZS92MTt0ZW1wbGF0ZXNjb25zb2xldjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
- * Part is one output of a template.
+ * Part is one output of a template, shared by its languages.
  *
  * @generated from message templates.console.v1.Part
  */
@@ -33,11 +33,6 @@ export type Part = Message<"templates.console.v1.Part"> & {
    * @generated from field: string kind = 2;
    */
   kind: string;
-
-  /**
-   * @generated from field: string source = 3;
-   */
-  source: string;
 };
 
 /**
@@ -48,18 +43,51 @@ export const PartSchema: GenMessage<Part> = /*@__PURE__*/
   messageDesc(file_proto_templates_console_v1_admin, 0);
 
 /**
- * Problem is what a part is wrong about.
+ * Translation is one language of a template: a source per part.
+ *
+ * @generated from message templates.console.v1.Translation
+ */
+export type Translation = Message<"templates.console.v1.Translation"> & {
+  /**
+   * BCP 47: en, ru, pt-BR.
+   *
+   * @generated from field: string language = 1;
+   */
+  language: string;
+
+  /**
+   * Part name to Go template source.
+   *
+   * @generated from field: map<string, string> sources = 2;
+   */
+  sources: { [key: string]: string };
+};
+
+/**
+ * Describes the message templates.console.v1.Translation.
+ * Use `create(TranslationSchema)` to create a new message.
+ */
+export const TranslationSchema: GenMessage<Translation> = /*@__PURE__*/
+  messageDesc(file_proto_templates_console_v1_admin, 1);
+
+/**
+ * Problem is what a part of a language is wrong about.
  *
  * @generated from message templates.console.v1.Problem
  */
 export type Problem = Message<"templates.console.v1.Problem"> & {
   /**
-   * @generated from field: string part = 1;
+   * @generated from field: string language = 1;
+   */
+  language: string;
+
+  /**
+   * @generated from field: string part = 2;
    */
   part: string;
 
   /**
-   * @generated from field: string message = 2;
+   * @generated from field: string message = 3;
    */
   message: string;
 };
@@ -69,7 +97,46 @@ export type Problem = Message<"templates.console.v1.Problem"> & {
  * Use `create(ProblemSchema)` to create a new message.
  */
 export const ProblemSchema: GenMessage<Problem> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 1);
+  messageDesc(file_proto_templates_console_v1_admin, 2);
+
+/**
+ * @generated from message templates.console.v1.GetSettingsRequest
+ */
+export type GetSettingsRequest = Message<"templates.console.v1.GetSettingsRequest"> & {
+};
+
+/**
+ * Describes the message templates.console.v1.GetSettingsRequest.
+ * Use `create(GetSettingsRequestSchema)` to create a new message.
+ */
+export const GetSettingsRequestSchema: GenMessage<GetSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_proto_templates_console_v1_admin, 3);
+
+/**
+ * @generated from message templates.console.v1.GetSettingsResponse
+ */
+export type GetSettingsResponse = Message<"templates.console.v1.GetSettingsResponse"> & {
+  /**
+   * Languages the editor offers, in order.
+   *
+   * @generated from field: repeated string languages = 1;
+   */
+  languages: string[];
+
+  /**
+   * The language renders fall back to last.
+   *
+   * @generated from field: string default_language = 2;
+   */
+  defaultLanguage: string;
+};
+
+/**
+ * Describes the message templates.console.v1.GetSettingsResponse.
+ * Use `create(GetSettingsResponseSchema)` to create a new message.
+ */
+export const GetSettingsResponseSchema: GenMessage<GetSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_proto_templates_console_v1_admin, 4);
 
 /**
  * @generated from message templates.console.v1.ListTemplatesRequest
@@ -82,7 +149,7 @@ export type ListTemplatesRequest = Message<"templates.console.v1.ListTemplatesRe
  * Use `create(ListTemplatesRequestSchema)` to create a new message.
  */
 export const ListTemplatesRequestSchema: GenMessage<ListTemplatesRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 2);
+  messageDesc(file_proto_templates_console_v1_admin, 5);
 
 /**
  * @generated from message templates.console.v1.ListTemplatesResponse
@@ -99,7 +166,7 @@ export type ListTemplatesResponse = Message<"templates.console.v1.ListTemplatesR
  * Use `create(ListTemplatesResponseSchema)` to create a new message.
  */
 export const ListTemplatesResponseSchema: GenMessage<ListTemplatesResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 3);
+  messageDesc(file_proto_templates_console_v1_admin, 6);
 
 /**
  * @generated from message templates.console.v1.TemplateSummary
@@ -133,7 +200,24 @@ export type TemplateSummary = Message<"templates.console.v1.TemplateSummary"> & 
   parts: string[];
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_at = 6;
+   * @generated from field: repeated string languages = 6;
+   */
+  languages: string[];
+
+  /**
+   * @generated from field: string default_language = 7;
+   */
+  defaultLanguage: string;
+
+  /**
+   * Languages of the active version with an empty part.
+   *
+   * @generated from field: repeated string incomplete = 8;
+   */
+  incomplete: string[];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 9;
    */
   updatedAt?: Timestamp | undefined;
 };
@@ -143,7 +227,7 @@ export type TemplateSummary = Message<"templates.console.v1.TemplateSummary"> & 
  * Use `create(TemplateSummarySchema)` to create a new message.
  */
 export const TemplateSummarySchema: GenMessage<TemplateSummary> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 4);
+  messageDesc(file_proto_templates_console_v1_admin, 7);
 
 /**
  * @generated from message templates.console.v1.GetTemplateRequest
@@ -167,7 +251,7 @@ export type GetTemplateRequest = Message<"templates.console.v1.GetTemplateReques
  * Use `create(GetTemplateRequestSchema)` to create a new message.
  */
 export const GetTemplateRequestSchema: GenMessage<GetTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 5);
+  messageDesc(file_proto_templates_console_v1_admin, 8);
 
 /**
  * @generated from message templates.console.v1.GetTemplateResponse
@@ -206,7 +290,7 @@ export type GetTemplateResponse = Message<"templates.console.v1.GetTemplateRespo
  * Use `create(GetTemplateResponseSchema)` to create a new message.
  */
 export const GetTemplateResponseSchema: GenMessage<GetTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 6);
+  messageDesc(file_proto_templates_console_v1_admin, 9);
 
 /**
  * @generated from message templates.console.v1.VersionSummary
@@ -231,6 +315,11 @@ export type VersionSummary = Message<"templates.console.v1.VersionSummary"> & {
    * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: repeated string languages = 5;
+   */
+  languages: string[];
 };
 
 /**
@@ -238,7 +327,7 @@ export type VersionSummary = Message<"templates.console.v1.VersionSummary"> & {
  * Use `create(VersionSummarySchema)` to create a new message.
  */
 export const VersionSummarySchema: GenMessage<VersionSummary> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 7);
+  messageDesc(file_proto_templates_console_v1_admin, 10);
 
 /**
  * @generated from message templates.console.v1.Version
@@ -255,24 +344,34 @@ export type Version = Message<"templates.console.v1.Version"> & {
   parts: Part[];
 
   /**
+   * @generated from field: repeated templates.console.v1.Translation translations = 3;
+   */
+  translations: Translation[];
+
+  /**
+   * @generated from field: string default_language = 4;
+   */
+  defaultLanguage: string;
+
+  /**
    * The sample data (JSON object) the editor previews with.
    *
-   * @generated from field: string sample = 3;
+   * @generated from field: string sample = 5;
    */
   sample: string;
 
   /**
-   * @generated from field: string author = 4;
+   * @generated from field: string author = 6;
    */
   author: string;
 
   /**
-   * @generated from field: string comment = 5;
+   * @generated from field: string comment = 7;
    */
   comment: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_at = 6;
+   * @generated from field: google.protobuf.Timestamp created_at = 8;
    */
   createdAt?: Timestamp | undefined;
 };
@@ -282,7 +381,7 @@ export type Version = Message<"templates.console.v1.Version"> & {
  * Use `create(VersionSchema)` to create a new message.
  */
 export const VersionSchema: GenMessage<Version> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 8);
+  messageDesc(file_proto_templates_console_v1_admin, 11);
 
 /**
  * @generated from message templates.console.v1.SaveTemplateRequest
@@ -304,21 +403,35 @@ export type SaveTemplateRequest = Message<"templates.console.v1.SaveTemplateRequ
   parts: Part[];
 
   /**
+   * At least one; every one gives a source for every part (empty allowed).
+   *
+   * @generated from field: repeated templates.console.v1.Translation translations = 4;
+   */
+  translations: Translation[];
+
+  /**
+   * One of the translations.
+   *
+   * @generated from field: string default_language = 5;
+   */
+  defaultLanguage: string;
+
+  /**
    * JSON object.
    *
-   * @generated from field: string sample = 4;
+   * @generated from field: string sample = 6;
    */
   sample: string;
 
   /**
-   * @generated from field: string comment = 5;
+   * @generated from field: string comment = 7;
    */
   comment: string;
 
   /**
    * Activate the new version at once.
    *
-   * @generated from field: bool activate = 6;
+   * @generated from field: bool activate = 8;
    */
   activate: boolean;
 };
@@ -328,7 +441,7 @@ export type SaveTemplateRequest = Message<"templates.console.v1.SaveTemplateRequ
  * Use `create(SaveTemplateRequestSchema)` to create a new message.
  */
 export const SaveTemplateRequestSchema: GenMessage<SaveTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 9);
+  messageDesc(file_proto_templates_console_v1_admin, 12);
 
 /**
  * @generated from message templates.console.v1.SaveTemplateResponse
@@ -345,7 +458,7 @@ export type SaveTemplateResponse = Message<"templates.console.v1.SaveTemplateRes
   activated: boolean;
 
   /**
-   * The sample not rendering, by part.
+   * The sample not rendering, by language and part.
    *
    * @generated from field: repeated templates.console.v1.Problem problems = 3;
    */
@@ -357,7 +470,7 @@ export type SaveTemplateResponse = Message<"templates.console.v1.SaveTemplateRes
  * Use `create(SaveTemplateResponseSchema)` to create a new message.
  */
 export const SaveTemplateResponseSchema: GenMessage<SaveTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 10);
+  messageDesc(file_proto_templates_console_v1_admin, 13);
 
 /**
  * @generated from message templates.console.v1.ActivateVersionRequest
@@ -379,7 +492,7 @@ export type ActivateVersionRequest = Message<"templates.console.v1.ActivateVersi
  * Use `create(ActivateVersionRequestSchema)` to create a new message.
  */
 export const ActivateVersionRequestSchema: GenMessage<ActivateVersionRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 11);
+  messageDesc(file_proto_templates_console_v1_admin, 14);
 
 /**
  * @generated from message templates.console.v1.ActivateVersionResponse
@@ -392,7 +505,7 @@ export type ActivateVersionResponse = Message<"templates.console.v1.ActivateVers
  * Use `create(ActivateVersionResponseSchema)` to create a new message.
  */
 export const ActivateVersionResponseSchema: GenMessage<ActivateVersionResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 12);
+  messageDesc(file_proto_templates_console_v1_admin, 15);
 
 /**
  * @generated from message templates.console.v1.DeleteTemplateRequest
@@ -409,7 +522,7 @@ export type DeleteTemplateRequest = Message<"templates.console.v1.DeleteTemplate
  * Use `create(DeleteTemplateRequestSchema)` to create a new message.
  */
 export const DeleteTemplateRequestSchema: GenMessage<DeleteTemplateRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 13);
+  messageDesc(file_proto_templates_console_v1_admin, 16);
 
 /**
  * @generated from message templates.console.v1.DeleteTemplateResponse
@@ -426,7 +539,7 @@ export type DeleteTemplateResponse = Message<"templates.console.v1.DeleteTemplat
  * Use `create(DeleteTemplateResponseSchema)` to create a new message.
  */
 export const DeleteTemplateResponseSchema: GenMessage<DeleteTemplateResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 14);
+  messageDesc(file_proto_templates_console_v1_admin, 17);
 
 /**
  * @generated from message templates.console.v1.PreviewRequest
@@ -438,9 +551,17 @@ export type PreviewRequest = Message<"templates.console.v1.PreviewRequest"> & {
   parts: Part[];
 
   /**
+   * The language to render: its sources and its rules (plural, numbers,
+   * dates).
+   *
+   * @generated from field: templates.console.v1.Translation translation = 2;
+   */
+  translation?: Translation | undefined;
+
+  /**
    * JSON object.
    *
-   * @generated from field: string data = 2;
+   * @generated from field: string data = 3;
    */
   data: string;
 };
@@ -450,7 +571,7 @@ export type PreviewRequest = Message<"templates.console.v1.PreviewRequest"> & {
  * Use `create(PreviewRequestSchema)` to create a new message.
  */
 export const PreviewRequestSchema: GenMessage<PreviewRequest> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 15);
+  messageDesc(file_proto_templates_console_v1_admin, 18);
 
 /**
  * @generated from message templates.console.v1.PreviewResponse
@@ -474,7 +595,7 @@ export type PreviewResponse = Message<"templates.console.v1.PreviewResponse"> & 
  * Use `create(PreviewResponseSchema)` to create a new message.
  */
 export const PreviewResponseSchema: GenMessage<PreviewResponse> = /*@__PURE__*/
-  messageDesc(file_proto_templates_console_v1_admin, 16);
+  messageDesc(file_proto_templates_console_v1_admin, 19);
 
 /**
  * AdminService is templates' internal API: the console module's editor,
@@ -485,7 +606,17 @@ export const PreviewResponseSchema: GenMessage<PreviewResponse> = /*@__PURE__*/
  */
 export const AdminService: GenService<{
   /**
-   * Every template with its active version's part names.
+   * The installation's languages, for the editor.
+   *
+   * @generated from rpc templates.console.v1.AdminService.GetSettings
+   */
+  getSettings: {
+    methodKind: "unary";
+    input: typeof GetSettingsRequestSchema;
+    output: typeof GetSettingsResponseSchema;
+  },
+  /**
+   * Every template with its active version's parts and languages.
    *
    * @generated from rpc templates.console.v1.AdminService.ListTemplates
    */
@@ -506,10 +637,10 @@ export const AdminService: GenService<{
     output: typeof GetTemplateResponseSchema;
   },
   /**
-   * Stores a new version (creating the template on first save). A part
-   * that does not parse refuses the save; the sample not rendering is a
-   * problem reported, the version still saved. The first version is
-   * activated; later ones when asked.
+   * Stores a new version with every language (creating the template on
+   * first save). A source that does not compile refuses the save; the
+   * sample not rendering is a problem reported, the version still saved.
+   * The first version is activated; later ones when asked.
    *
    * @generated from rpc templates.console.v1.AdminService.SaveTemplate
    */
@@ -540,8 +671,8 @@ export const AdminService: GenService<{
     output: typeof DeleteTemplateResponseSchema;
   },
   /**
-   * Renders parts with data on the server, with the installation's
-   * current shared pieces; nothing is stored.
+   * Renders one language of a draft with data on the server, with the
+   * installation's active shared pieces; nothing is stored.
    *
    * @generated from rpc templates.console.v1.AdminService.Preview
    */

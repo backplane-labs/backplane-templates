@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	AdminService_GetSettings_FullMethodName     = "/templates.console.v1.AdminService/GetSettings"
 	AdminService_ListTemplates_FullMethodName   = "/templates.console.v1.AdminService/ListTemplates"
 	AdminService_GetTemplate_FullMethodName     = "/templates.console.v1.AdminService/GetTemplate"
 	AdminService_SaveTemplate_FullMethodName    = "/templates.console.v1.AdminService/SaveTemplate"
@@ -35,23 +36,25 @@ const (
 // relayed by backplane behind the operator's session. Products never
 // call it; they render through the templates.Render activity.
 type AdminServiceClient interface {
-	// Every template with its active version's part names.
+	// The installation's languages, for the editor.
+	GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error)
+	// Every template with its active version's parts and languages.
 	ListTemplates(ctx context.Context, in *ListTemplatesRequest, opts ...grpc.CallOption) (*ListTemplatesResponse, error)
 	// One template: its versions and the content of one of them (the
 	// active one unless a version is asked for).
 	GetTemplate(ctx context.Context, in *GetTemplateRequest, opts ...grpc.CallOption) (*GetTemplateResponse, error)
-	// Stores a new version (creating the template on first save). A part
-	// that does not parse refuses the save; the sample not rendering is a
-	// problem reported, the version still saved. The first version is
-	// activated; later ones when asked.
+	// Stores a new version with every language (creating the template on
+	// first save). A source that does not compile refuses the save; the
+	// sample not rendering is a problem reported, the version still saved.
+	// The first version is activated; later ones when asked.
 	SaveTemplate(ctx context.Context, in *SaveTemplateRequest, opts ...grpc.CallOption) (*SaveTemplateResponse, error)
 	// Makes a version the one Render uses (a rollback is activating an
 	// older one).
 	ActivateVersion(ctx context.Context, in *ActivateVersionRequest, opts ...grpc.CallOption) (*ActivateVersionResponse, error)
 	// Removes a template with every version.
 	DeleteTemplate(ctx context.Context, in *DeleteTemplateRequest, opts ...grpc.CallOption) (*DeleteTemplateResponse, error)
-	// Renders parts with data on the server, with the installation's
-	// current shared pieces; nothing is stored.
+	// Renders one language of a draft with data on the server, with the
+	// installation's active shared pieces; nothing is stored.
 	Preview(ctx context.Context, in *PreviewRequest, opts ...grpc.CallOption) (*PreviewResponse, error)
 }
 
@@ -61,6 +64,16 @@ type adminServiceClient struct {
 
 func NewAdminServiceClient(cc grpc.ClientConnInterface) AdminServiceClient {
 	return &adminServiceClient{cc}
+}
+
+func (c *adminServiceClient) GetSettings(ctx context.Context, in *GetSettingsRequest, opts ...grpc.CallOption) (*GetSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSettingsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *adminServiceClient) ListTemplates(ctx context.Context, in *ListTemplatesRequest, opts ...grpc.CallOption) (*ListTemplatesResponse, error) {
@@ -131,23 +144,25 @@ func (c *adminServiceClient) Preview(ctx context.Context, in *PreviewRequest, op
 // relayed by backplane behind the operator's session. Products never
 // call it; they render through the templates.Render activity.
 type AdminServiceServer interface {
-	// Every template with its active version's part names.
+	// The installation's languages, for the editor.
+	GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error)
+	// Every template with its active version's parts and languages.
 	ListTemplates(context.Context, *ListTemplatesRequest) (*ListTemplatesResponse, error)
 	// One template: its versions and the content of one of them (the
 	// active one unless a version is asked for).
 	GetTemplate(context.Context, *GetTemplateRequest) (*GetTemplateResponse, error)
-	// Stores a new version (creating the template on first save). A part
-	// that does not parse refuses the save; the sample not rendering is a
-	// problem reported, the version still saved. The first version is
-	// activated; later ones when asked.
+	// Stores a new version with every language (creating the template on
+	// first save). A source that does not compile refuses the save; the
+	// sample not rendering is a problem reported, the version still saved.
+	// The first version is activated; later ones when asked.
 	SaveTemplate(context.Context, *SaveTemplateRequest) (*SaveTemplateResponse, error)
 	// Makes a version the one Render uses (a rollback is activating an
 	// older one).
 	ActivateVersion(context.Context, *ActivateVersionRequest) (*ActivateVersionResponse, error)
 	// Removes a template with every version.
 	DeleteTemplate(context.Context, *DeleteTemplateRequest) (*DeleteTemplateResponse, error)
-	// Renders parts with data on the server, with the installation's
-	// current shared pieces; nothing is stored.
+	// Renders one language of a draft with data on the server, with the
+	// installation's active shared pieces; nothing is stored.
 	Preview(context.Context, *PreviewRequest) (*PreviewResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
@@ -159,6 +174,9 @@ type AdminServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedAdminServiceServer struct{}
 
+func (UnimplementedAdminServiceServer) GetSettings(context.Context, *GetSettingsRequest) (*GetSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSettings not implemented")
+}
 func (UnimplementedAdminServiceServer) ListTemplates(context.Context, *ListTemplatesRequest) (*ListTemplatesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTemplates not implemented")
 }
@@ -196,6 +214,24 @@ func RegisterAdminServiceServer(s grpc.ServiceRegistrar, srv AdminServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&AdminService_ServiceDesc, srv)
+}
+
+func _AdminService_GetSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetSettings(ctx, req.(*GetSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AdminService_ListTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -313,6 +349,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "templates.console.v1.AdminService",
 	HandlerType: (*AdminServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetSettings",
+			Handler:    _AdminService_GetSettings_Handler,
+		},
 		{
 			MethodName: "ListTemplates",
 			Handler:    _AdminService_ListTemplates_Handler,

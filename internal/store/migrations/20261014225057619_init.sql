@@ -12,6 +12,8 @@ CREATE TABLE "templates"."template_version" (
   "name" text NOT NULL,
   "version" int8 NOT NULL,
   "parts" jsonb NOT NULL,
+  "translations" jsonb NOT NULL,
+  "default_language" text NOT NULL,
   "sample" jsonb NOT NULL DEFAULT '{}'::jsonb,
   "author" text NOT NULL DEFAULT ''::text,
   "comment" text NOT NULL DEFAULT ''::text,

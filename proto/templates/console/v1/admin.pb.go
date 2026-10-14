@@ -22,14 +22,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Part is one output of a template.
+// Part is one output of a template, shared by its languages.
 type Part struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// [a-z][a-z0-9_]*: subject, text, html, title, body...
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// text or html (contextual escaping).
 	Kind          string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
-	Source        string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -78,25 +77,74 @@ func (x *Part) GetKind() string {
 	return ""
 }
 
-func (x *Part) GetSource() string {
+// Translation is one language of a template: a source per part.
+type Translation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// BCP 47: en, ru, pt-BR.
+	Language string `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	// Part name to Go template source.
+	Sources       map[string]string `protobuf:"bytes,2,rep,name=sources,proto3" json:"sources,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Translation) Reset() {
+	*x = Translation{}
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Translation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Translation) ProtoMessage() {}
+
+func (x *Translation) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[1]
 	if x != nil {
-		return x.Source
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Translation.ProtoReflect.Descriptor instead.
+func (*Translation) Descriptor() ([]byte, []int) {
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Translation) GetLanguage() string {
+	if x != nil {
+		return x.Language
 	}
 	return ""
 }
 
-// Problem is what a part is wrong about.
+func (x *Translation) GetSources() map[string]string {
+	if x != nil {
+		return x.Sources
+	}
+	return nil
+}
+
+// Problem is what a part of a language is wrong about.
 type Problem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Part          string                 `protobuf:"bytes,1,opt,name=part,proto3" json:"part,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Language      string                 `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	Part          string                 `protobuf:"bytes,2,opt,name=part,proto3" json:"part,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Problem) Reset() {
 	*x = Problem{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[1]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -108,7 +156,7 @@ func (x *Problem) String() string {
 func (*Problem) ProtoMessage() {}
 
 func (x *Problem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[1]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +169,14 @@ func (x *Problem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Problem.ProtoReflect.Descriptor instead.
 func (*Problem) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{1}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Problem) GetLanguage() string {
+	if x != nil {
+		return x.Language
+	}
+	return ""
 }
 
 func (x *Problem) GetPart() string {
@@ -138,6 +193,96 @@ func (x *Problem) GetMessage() string {
 	return ""
 }
 
+type GetSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSettingsRequest) Reset() {
+	*x = GetSettingsRequest{}
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsRequest) ProtoMessage() {}
+
+func (x *GetSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsRequest.ProtoReflect.Descriptor instead.
+func (*GetSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{3}
+}
+
+type GetSettingsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Languages the editor offers, in order.
+	Languages []string `protobuf:"bytes,1,rep,name=languages,proto3" json:"languages,omitempty"`
+	// The language renders fall back to last.
+	DefaultLanguage string `protobuf:"bytes,2,opt,name=default_language,json=defaultLanguage,proto3" json:"default_language,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetSettingsResponse) Reset() {
+	*x = GetSettingsResponse{}
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSettingsResponse) ProtoMessage() {}
+
+func (x *GetSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSettingsResponse.ProtoReflect.Descriptor instead.
+func (*GetSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetSettingsResponse) GetLanguages() []string {
+	if x != nil {
+		return x.Languages
+	}
+	return nil
+}
+
+func (x *GetSettingsResponse) GetDefaultLanguage() string {
+	if x != nil {
+		return x.DefaultLanguage
+	}
+	return ""
+}
+
 type ListTemplatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -146,7 +291,7 @@ type ListTemplatesRequest struct {
 
 func (x *ListTemplatesRequest) Reset() {
 	*x = ListTemplatesRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[2]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -158,7 +303,7 @@ func (x *ListTemplatesRequest) String() string {
 func (*ListTemplatesRequest) ProtoMessage() {}
 
 func (x *ListTemplatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[2]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -171,7 +316,7 @@ func (x *ListTemplatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTemplatesRequest.ProtoReflect.Descriptor instead.
 func (*ListTemplatesRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{2}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{5}
 }
 
 type ListTemplatesResponse struct {
@@ -183,7 +328,7 @@ type ListTemplatesResponse struct {
 
 func (x *ListTemplatesResponse) Reset() {
 	*x = ListTemplatesResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[3]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +340,7 @@ func (x *ListTemplatesResponse) String() string {
 func (*ListTemplatesResponse) ProtoMessage() {}
 
 func (x *ListTemplatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[3]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +353,7 @@ func (x *ListTemplatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTemplatesResponse.ProtoReflect.Descriptor instead.
 func (*ListTemplatesResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{3}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListTemplatesResponse) GetTemplates() []*TemplateSummary {
@@ -223,17 +368,21 @@ type TemplateSummary struct {
 	Name        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Description string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// 0: no version activated yet.
-	ActiveVersion int64                  `protobuf:"varint,3,opt,name=active_version,json=activeVersion,proto3" json:"active_version,omitempty"`
-	Versions      int64                  `protobuf:"varint,4,opt,name=versions,proto3" json:"versions,omitempty"`
-	Parts         []string               `protobuf:"bytes,5,rep,name=parts,proto3" json:"parts,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ActiveVersion   int64    `protobuf:"varint,3,opt,name=active_version,json=activeVersion,proto3" json:"active_version,omitempty"`
+	Versions        int64    `protobuf:"varint,4,opt,name=versions,proto3" json:"versions,omitempty"`
+	Parts           []string `protobuf:"bytes,5,rep,name=parts,proto3" json:"parts,omitempty"`
+	Languages       []string `protobuf:"bytes,6,rep,name=languages,proto3" json:"languages,omitempty"`
+	DefaultLanguage string   `protobuf:"bytes,7,opt,name=default_language,json=defaultLanguage,proto3" json:"default_language,omitempty"`
+	// Languages of the active version with an empty part.
+	Incomplete    []string               `protobuf:"bytes,8,rep,name=incomplete,proto3" json:"incomplete,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TemplateSummary) Reset() {
 	*x = TemplateSummary{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[4]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +394,7 @@ func (x *TemplateSummary) String() string {
 func (*TemplateSummary) ProtoMessage() {}
 
 func (x *TemplateSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[4]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +407,7 @@ func (x *TemplateSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TemplateSummary.ProtoReflect.Descriptor instead.
 func (*TemplateSummary) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{4}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TemplateSummary) GetName() string {
@@ -296,6 +445,27 @@ func (x *TemplateSummary) GetParts() []string {
 	return nil
 }
 
+func (x *TemplateSummary) GetLanguages() []string {
+	if x != nil {
+		return x.Languages
+	}
+	return nil
+}
+
+func (x *TemplateSummary) GetDefaultLanguage() string {
+	if x != nil {
+		return x.DefaultLanguage
+	}
+	return ""
+}
+
+func (x *TemplateSummary) GetIncomplete() []string {
+	if x != nil {
+		return x.Incomplete
+	}
+	return nil
+}
+
 func (x *TemplateSummary) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
@@ -314,7 +484,7 @@ type GetTemplateRequest struct {
 
 func (x *GetTemplateRequest) Reset() {
 	*x = GetTemplateRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[5]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +496,7 @@ func (x *GetTemplateRequest) String() string {
 func (*GetTemplateRequest) ProtoMessage() {}
 
 func (x *GetTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[5]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +509,7 @@ func (x *GetTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTemplateRequest.ProtoReflect.Descriptor instead.
 func (*GetTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{5}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetTemplateRequest) GetName() string {
@@ -370,7 +540,7 @@ type GetTemplateResponse struct {
 
 func (x *GetTemplateResponse) Reset() {
 	*x = GetTemplateResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[6]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -382,7 +552,7 @@ func (x *GetTemplateResponse) String() string {
 func (*GetTemplateResponse) ProtoMessage() {}
 
 func (x *GetTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[6]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -395,7 +565,7 @@ func (x *GetTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTemplateResponse.ProtoReflect.Descriptor instead.
 func (*GetTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{6}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetTemplateResponse) GetName() string {
@@ -439,13 +609,14 @@ type VersionSummary struct {
 	Author        string                 `protobuf:"bytes,2,opt,name=author,proto3" json:"author,omitempty"`
 	Comment       string                 `protobuf:"bytes,3,opt,name=comment,proto3" json:"comment,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Languages     []string               `protobuf:"bytes,5,rep,name=languages,proto3" json:"languages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *VersionSummary) Reset() {
 	*x = VersionSummary{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[7]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -457,7 +628,7 @@ func (x *VersionSummary) String() string {
 func (*VersionSummary) ProtoMessage() {}
 
 func (x *VersionSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[7]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -470,7 +641,7 @@ func (x *VersionSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionSummary.ProtoReflect.Descriptor instead.
 func (*VersionSummary) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{7}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *VersionSummary) GetVersion() int64 {
@@ -501,22 +672,31 @@ func (x *VersionSummary) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *VersionSummary) GetLanguages() []string {
+	if x != nil {
+		return x.Languages
+	}
+	return nil
+}
+
 type Version struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Version int64                  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	Parts   []*Part                `protobuf:"bytes,2,rep,name=parts,proto3" json:"parts,omitempty"`
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Version         int64                  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Parts           []*Part                `protobuf:"bytes,2,rep,name=parts,proto3" json:"parts,omitempty"`
+	Translations    []*Translation         `protobuf:"bytes,3,rep,name=translations,proto3" json:"translations,omitempty"`
+	DefaultLanguage string                 `protobuf:"bytes,4,opt,name=default_language,json=defaultLanguage,proto3" json:"default_language,omitempty"`
 	// The sample data (JSON object) the editor previews with.
-	Sample        string                 `protobuf:"bytes,3,opt,name=sample,proto3" json:"sample,omitempty"`
-	Author        string                 `protobuf:"bytes,4,opt,name=author,proto3" json:"author,omitempty"`
-	Comment       string                 `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Sample        string                 `protobuf:"bytes,5,opt,name=sample,proto3" json:"sample,omitempty"`
+	Author        string                 `protobuf:"bytes,6,opt,name=author,proto3" json:"author,omitempty"`
+	Comment       string                 `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Version) Reset() {
 	*x = Version{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[8]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -528,7 +708,7 @@ func (x *Version) String() string {
 func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[8]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +721,7 @@ func (x *Version) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Version.ProtoReflect.Descriptor instead.
 func (*Version) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{8}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Version) GetVersion() int64 {
@@ -556,6 +736,20 @@ func (x *Version) GetParts() []*Part {
 		return x.Parts
 	}
 	return nil
+}
+
+func (x *Version) GetTranslations() []*Translation {
+	if x != nil {
+		return x.Translations
+	}
+	return nil
+}
+
+func (x *Version) GetDefaultLanguage() string {
+	if x != nil {
+		return x.DefaultLanguage
+	}
+	return ""
 }
 
 func (x *Version) GetSample() string {
@@ -591,18 +785,22 @@ type SaveTemplateRequest struct {
 	Name        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Description string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	Parts       []*Part                `protobuf:"bytes,3,rep,name=parts,proto3" json:"parts,omitempty"`
+	// At least one; every one gives a source for every part (empty allowed).
+	Translations []*Translation `protobuf:"bytes,4,rep,name=translations,proto3" json:"translations,omitempty"`
+	// One of the translations.
+	DefaultLanguage string `protobuf:"bytes,5,opt,name=default_language,json=defaultLanguage,proto3" json:"default_language,omitempty"`
 	// JSON object.
-	Sample  string `protobuf:"bytes,4,opt,name=sample,proto3" json:"sample,omitempty"`
-	Comment string `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
+	Sample  string `protobuf:"bytes,6,opt,name=sample,proto3" json:"sample,omitempty"`
+	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
 	// Activate the new version at once.
-	Activate      bool `protobuf:"varint,6,opt,name=activate,proto3" json:"activate,omitempty"`
+	Activate      bool `protobuf:"varint,8,opt,name=activate,proto3" json:"activate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SaveTemplateRequest) Reset() {
 	*x = SaveTemplateRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[9]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -614,7 +812,7 @@ func (x *SaveTemplateRequest) String() string {
 func (*SaveTemplateRequest) ProtoMessage() {}
 
 func (x *SaveTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[9]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -627,7 +825,7 @@ func (x *SaveTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveTemplateRequest.ProtoReflect.Descriptor instead.
 func (*SaveTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{9}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SaveTemplateRequest) GetName() string {
@@ -649,6 +847,20 @@ func (x *SaveTemplateRequest) GetParts() []*Part {
 		return x.Parts
 	}
 	return nil
+}
+
+func (x *SaveTemplateRequest) GetTranslations() []*Translation {
+	if x != nil {
+		return x.Translations
+	}
+	return nil
+}
+
+func (x *SaveTemplateRequest) GetDefaultLanguage() string {
+	if x != nil {
+		return x.DefaultLanguage
+	}
+	return ""
 }
 
 func (x *SaveTemplateRequest) GetSample() string {
@@ -676,7 +888,7 @@ type SaveTemplateResponse struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Version   int64                  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
 	Activated bool                   `protobuf:"varint,2,opt,name=activated,proto3" json:"activated,omitempty"`
-	// The sample not rendering, by part.
+	// The sample not rendering, by language and part.
 	Problems      []*Problem `protobuf:"bytes,3,rep,name=problems,proto3" json:"problems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -684,7 +896,7 @@ type SaveTemplateResponse struct {
 
 func (x *SaveTemplateResponse) Reset() {
 	*x = SaveTemplateResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[10]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -696,7 +908,7 @@ func (x *SaveTemplateResponse) String() string {
 func (*SaveTemplateResponse) ProtoMessage() {}
 
 func (x *SaveTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[10]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -709,7 +921,7 @@ func (x *SaveTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveTemplateResponse.ProtoReflect.Descriptor instead.
 func (*SaveTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{10}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *SaveTemplateResponse) GetVersion() int64 {
@@ -743,7 +955,7 @@ type ActivateVersionRequest struct {
 
 func (x *ActivateVersionRequest) Reset() {
 	*x = ActivateVersionRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[11]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -755,7 +967,7 @@ func (x *ActivateVersionRequest) String() string {
 func (*ActivateVersionRequest) ProtoMessage() {}
 
 func (x *ActivateVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[11]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -768,7 +980,7 @@ func (x *ActivateVersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateVersionRequest.ProtoReflect.Descriptor instead.
 func (*ActivateVersionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{11}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ActivateVersionRequest) GetName() string {
@@ -793,7 +1005,7 @@ type ActivateVersionResponse struct {
 
 func (x *ActivateVersionResponse) Reset() {
 	*x = ActivateVersionResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[12]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -805,7 +1017,7 @@ func (x *ActivateVersionResponse) String() string {
 func (*ActivateVersionResponse) ProtoMessage() {}
 
 func (x *ActivateVersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[12]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -818,7 +1030,7 @@ func (x *ActivateVersionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateVersionResponse.ProtoReflect.Descriptor instead.
 func (*ActivateVersionResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{12}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{15}
 }
 
 type DeleteTemplateRequest struct {
@@ -830,7 +1042,7 @@ type DeleteTemplateRequest struct {
 
 func (x *DeleteTemplateRequest) Reset() {
 	*x = DeleteTemplateRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[13]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +1054,7 @@ func (x *DeleteTemplateRequest) String() string {
 func (*DeleteTemplateRequest) ProtoMessage() {}
 
 func (x *DeleteTemplateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[13]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +1067,7 @@ func (x *DeleteTemplateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTemplateRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTemplateRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{13}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DeleteTemplateRequest) GetName() string {
@@ -874,7 +1086,7 @@ type DeleteTemplateResponse struct {
 
 func (x *DeleteTemplateResponse) Reset() {
 	*x = DeleteTemplateResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[14]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -886,7 +1098,7 @@ func (x *DeleteTemplateResponse) String() string {
 func (*DeleteTemplateResponse) ProtoMessage() {}
 
 func (x *DeleteTemplateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[14]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -899,7 +1111,7 @@ func (x *DeleteTemplateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTemplateResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTemplateResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{14}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeleteTemplateResponse) GetDeleted() bool {
@@ -912,15 +1124,18 @@ func (x *DeleteTemplateResponse) GetDeleted() bool {
 type PreviewRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Parts []*Part                `protobuf:"bytes,1,rep,name=parts,proto3" json:"parts,omitempty"`
+	// The language to render: its sources and its rules (plural, numbers,
+	// dates).
+	Translation *Translation `protobuf:"bytes,2,opt,name=translation,proto3" json:"translation,omitempty"`
 	// JSON object.
-	Data          string `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Data          string `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PreviewRequest) Reset() {
 	*x = PreviewRequest{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[15]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -932,7 +1147,7 @@ func (x *PreviewRequest) String() string {
 func (*PreviewRequest) ProtoMessage() {}
 
 func (x *PreviewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[15]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -945,12 +1160,19 @@ func (x *PreviewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewRequest.ProtoReflect.Descriptor instead.
 func (*PreviewRequest) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{15}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *PreviewRequest) GetParts() []*Part {
 	if x != nil {
 		return x.Parts
+	}
+	return nil
+}
+
+func (x *PreviewRequest) GetTranslation() *Translation {
+	if x != nil {
+		return x.Translation
 	}
 	return nil
 }
@@ -973,7 +1195,7 @@ type PreviewResponse struct {
 
 func (x *PreviewResponse) Reset() {
 	*x = PreviewResponse{}
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[16]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -985,7 +1207,7 @@ func (x *PreviewResponse) String() string {
 func (*PreviewResponse) ProtoMessage() {}
 
 func (x *PreviewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[16]
+	mi := &file_proto_templates_console_v1_admin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -998,7 +1220,7 @@ func (x *PreviewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewResponse.ProtoReflect.Descriptor instead.
 func (*PreviewResponse) Descriptor() ([]byte, []int) {
-	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{16}
+	return file_proto_templates_console_v1_admin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PreviewResponse) GetParts() map[string]string {
@@ -1019,25 +1241,40 @@ var File_proto_templates_console_v1_admin_proto protoreflect.FileDescriptor
 
 const file_proto_templates_console_v1_admin_proto_rawDesc = "" +
 	"\n" +
-	"&proto/templates/console/v1/admin.proto\x12\x14templates.console.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"F\n" +
+	"&proto/templates/console/v1/admin.proto\x12\x14templates.console.v1\x1a\x1fgoogle/protobuf/timestamp.proto\".\n" +
 	"\x04Part\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source\"7\n" +
-	"\aProblem\x12\x12\n" +
-	"\x04part\x18\x01 \x01(\tR\x04part\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x16\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\"\xaf\x01\n" +
+	"\vTranslation\x12\x1a\n" +
+	"\blanguage\x18\x01 \x01(\tR\blanguage\x12H\n" +
+	"\asources\x18\x02 \x03(\v2..templates.console.v1.Translation.SourcesEntryR\asources\x1a:\n" +
+	"\fSourcesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
+	"\aProblem\x12\x1a\n" +
+	"\blanguage\x18\x01 \x01(\tR\blanguage\x12\x12\n" +
+	"\x04part\x18\x02 \x01(\tR\x04part\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x14\n" +
+	"\x12GetSettingsRequest\"^\n" +
+	"\x13GetSettingsResponse\x12\x1c\n" +
+	"\tlanguages\x18\x01 \x03(\tR\tlanguages\x12)\n" +
+	"\x10default_language\x18\x02 \x01(\tR\x0fdefaultLanguage\"\x16\n" +
 	"\x14ListTemplatesRequest\"\\\n" +
 	"\x15ListTemplatesResponse\x12C\n" +
-	"\ttemplates\x18\x01 \x03(\v2%.templates.console.v1.TemplateSummaryR\ttemplates\"\xdb\x01\n" +
+	"\ttemplates\x18\x01 \x03(\v2%.templates.console.v1.TemplateSummaryR\ttemplates\"\xc4\x02\n" +
 	"\x0fTemplateSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
 	"\x0eactive_version\x18\x03 \x01(\x03R\ractiveVersion\x12\x1a\n" +
 	"\bversions\x18\x04 \x01(\x03R\bversions\x12\x14\n" +
-	"\x05parts\x18\x05 \x03(\tR\x05parts\x129\n" +
+	"\x05parts\x18\x05 \x03(\tR\x05parts\x12\x1c\n" +
+	"\tlanguages\x18\x06 \x03(\tR\tlanguages\x12)\n" +
+	"\x10default_language\x18\a \x01(\tR\x0fdefaultLanguage\x12\x1e\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"B\n" +
+	"incomplete\x18\b \x03(\tR\n" +
+	"incomplete\x129\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"B\n" +
 	"\x12GetTemplateRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x03R\aversion\"\xed\x01\n" +
@@ -1046,28 +1283,33 @@ const file_proto_templates_console_v1_admin_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
 	"\x0eactive_version\x18\x03 \x01(\x03R\ractiveVersion\x12@\n" +
 	"\bversions\x18\x04 \x03(\v2$.templates.console.v1.VersionSummaryR\bversions\x127\n" +
-	"\acontent\x18\x05 \x01(\v2\x1d.templates.console.v1.VersionR\acontent\"\x97\x01\n" +
+	"\acontent\x18\x05 \x01(\v2\x1d.templates.console.v1.VersionR\acontent\"\xb5\x01\n" +
 	"\x0eVersionSummary\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x03R\aversion\x12\x16\n" +
 	"\x06author\x18\x02 \x01(\tR\x06author\x12\x18\n" +
 	"\acomment\x18\x03 \x01(\tR\acomment\x129\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xda\x01\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1c\n" +
+	"\tlanguages\x18\x05 \x03(\tR\tlanguages\"\xcc\x02\n" +
 	"\aVersion\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x03R\aversion\x120\n" +
-	"\x05parts\x18\x02 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12\x16\n" +
-	"\x06sample\x18\x03 \x01(\tR\x06sample\x12\x16\n" +
-	"\x06author\x18\x04 \x01(\tR\x06author\x12\x18\n" +
-	"\acomment\x18\x05 \x01(\tR\acomment\x129\n" +
+	"\x05parts\x18\x02 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12E\n" +
+	"\ftranslations\x18\x03 \x03(\v2!.templates.console.v1.TranslationR\ftranslations\x12)\n" +
+	"\x10default_language\x18\x04 \x01(\tR\x0fdefaultLanguage\x12\x16\n" +
+	"\x06sample\x18\x05 \x01(\tR\x06sample\x12\x16\n" +
+	"\x06author\x18\x06 \x01(\tR\x06author\x12\x18\n" +
+	"\acomment\x18\a \x01(\tR\acomment\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xcb\x01\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xbd\x02\n" +
 	"\x13SaveTemplateRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x120\n" +
-	"\x05parts\x18\x03 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12\x16\n" +
-	"\x06sample\x18\x04 \x01(\tR\x06sample\x12\x18\n" +
-	"\acomment\x18\x05 \x01(\tR\acomment\x12\x1a\n" +
-	"\bactivate\x18\x06 \x01(\bR\bactivate\"\x89\x01\n" +
+	"\x05parts\x18\x03 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12E\n" +
+	"\ftranslations\x18\x04 \x03(\v2!.templates.console.v1.TranslationR\ftranslations\x12)\n" +
+	"\x10default_language\x18\x05 \x01(\tR\x0fdefaultLanguage\x12\x16\n" +
+	"\x06sample\x18\x06 \x01(\tR\x06sample\x12\x18\n" +
+	"\acomment\x18\a \x01(\tR\acomment\x12\x1a\n" +
+	"\bactivate\x18\b \x01(\bR\bactivate\"\x89\x01\n" +
 	"\x14SaveTemplateResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x03R\aversion\x12\x1c\n" +
 	"\tactivated\x18\x02 \x01(\bR\tactivated\x129\n" +
@@ -1079,18 +1321,20 @@ const file_proto_templates_console_v1_admin_proto_rawDesc = "" +
 	"\x15DeleteTemplateRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"2\n" +
 	"\x16DeleteTemplateResponse\x12\x18\n" +
-	"\adeleted\x18\x01 \x01(\bR\adeleted\"V\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"\x9b\x01\n" +
 	"\x0ePreviewRequest\x120\n" +
-	"\x05parts\x18\x01 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\tR\x04data\"\xce\x01\n" +
+	"\x05parts\x18\x01 \x03(\v2\x1a.templates.console.v1.PartR\x05parts\x12C\n" +
+	"\vtranslation\x18\x02 \x01(\v2!.templates.console.v1.TranslationR\vtranslation\x12\x12\n" +
+	"\x04data\x18\x03 \x01(\tR\x04data\"\xce\x01\n" +
 	"\x0fPreviewResponse\x12F\n" +
 	"\x05parts\x18\x01 \x03(\v20.templates.console.v1.PreviewResponse.PartsEntryR\x05parts\x129\n" +
 	"\bproblems\x18\x02 \x03(\v2\x1d.templates.console.v1.ProblemR\bproblems\x1a8\n" +
 	"\n" +
 	"PartsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xf8\x04\n" +
-	"\fAdminService\x12h\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xdc\x05\n" +
+	"\fAdminService\x12b\n" +
+	"\vGetSettings\x12(.templates.console.v1.GetSettingsRequest\x1a).templates.console.v1.GetSettingsResponse\x12h\n" +
 	"\rListTemplates\x12*.templates.console.v1.ListTemplatesRequest\x1a+.templates.console.v1.ListTemplatesResponse\x12b\n" +
 	"\vGetTemplate\x12(.templates.console.v1.GetTemplateRequest\x1a).templates.console.v1.GetTemplateResponse\x12e\n" +
 	"\fSaveTemplate\x12).templates.console.v1.SaveTemplateRequest\x1a*.templates.console.v1.SaveTemplateResponse\x12n\n" +
@@ -1110,58 +1354,68 @@ func file_proto_templates_console_v1_admin_proto_rawDescGZIP() []byte {
 	return file_proto_templates_console_v1_admin_proto_rawDescData
 }
 
-var file_proto_templates_console_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_proto_templates_console_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_proto_templates_console_v1_admin_proto_goTypes = []any{
 	(*Part)(nil),                    // 0: templates.console.v1.Part
-	(*Problem)(nil),                 // 1: templates.console.v1.Problem
-	(*ListTemplatesRequest)(nil),    // 2: templates.console.v1.ListTemplatesRequest
-	(*ListTemplatesResponse)(nil),   // 3: templates.console.v1.ListTemplatesResponse
-	(*TemplateSummary)(nil),         // 4: templates.console.v1.TemplateSummary
-	(*GetTemplateRequest)(nil),      // 5: templates.console.v1.GetTemplateRequest
-	(*GetTemplateResponse)(nil),     // 6: templates.console.v1.GetTemplateResponse
-	(*VersionSummary)(nil),          // 7: templates.console.v1.VersionSummary
-	(*Version)(nil),                 // 8: templates.console.v1.Version
-	(*SaveTemplateRequest)(nil),     // 9: templates.console.v1.SaveTemplateRequest
-	(*SaveTemplateResponse)(nil),    // 10: templates.console.v1.SaveTemplateResponse
-	(*ActivateVersionRequest)(nil),  // 11: templates.console.v1.ActivateVersionRequest
-	(*ActivateVersionResponse)(nil), // 12: templates.console.v1.ActivateVersionResponse
-	(*DeleteTemplateRequest)(nil),   // 13: templates.console.v1.DeleteTemplateRequest
-	(*DeleteTemplateResponse)(nil),  // 14: templates.console.v1.DeleteTemplateResponse
-	(*PreviewRequest)(nil),          // 15: templates.console.v1.PreviewRequest
-	(*PreviewResponse)(nil),         // 16: templates.console.v1.PreviewResponse
-	nil,                             // 17: templates.console.v1.PreviewResponse.PartsEntry
-	(*timestamppb.Timestamp)(nil),   // 18: google.protobuf.Timestamp
+	(*Translation)(nil),             // 1: templates.console.v1.Translation
+	(*Problem)(nil),                 // 2: templates.console.v1.Problem
+	(*GetSettingsRequest)(nil),      // 3: templates.console.v1.GetSettingsRequest
+	(*GetSettingsResponse)(nil),     // 4: templates.console.v1.GetSettingsResponse
+	(*ListTemplatesRequest)(nil),    // 5: templates.console.v1.ListTemplatesRequest
+	(*ListTemplatesResponse)(nil),   // 6: templates.console.v1.ListTemplatesResponse
+	(*TemplateSummary)(nil),         // 7: templates.console.v1.TemplateSummary
+	(*GetTemplateRequest)(nil),      // 8: templates.console.v1.GetTemplateRequest
+	(*GetTemplateResponse)(nil),     // 9: templates.console.v1.GetTemplateResponse
+	(*VersionSummary)(nil),          // 10: templates.console.v1.VersionSummary
+	(*Version)(nil),                 // 11: templates.console.v1.Version
+	(*SaveTemplateRequest)(nil),     // 12: templates.console.v1.SaveTemplateRequest
+	(*SaveTemplateResponse)(nil),    // 13: templates.console.v1.SaveTemplateResponse
+	(*ActivateVersionRequest)(nil),  // 14: templates.console.v1.ActivateVersionRequest
+	(*ActivateVersionResponse)(nil), // 15: templates.console.v1.ActivateVersionResponse
+	(*DeleteTemplateRequest)(nil),   // 16: templates.console.v1.DeleteTemplateRequest
+	(*DeleteTemplateResponse)(nil),  // 17: templates.console.v1.DeleteTemplateResponse
+	(*PreviewRequest)(nil),          // 18: templates.console.v1.PreviewRequest
+	(*PreviewResponse)(nil),         // 19: templates.console.v1.PreviewResponse
+	nil,                             // 20: templates.console.v1.Translation.SourcesEntry
+	nil,                             // 21: templates.console.v1.PreviewResponse.PartsEntry
+	(*timestamppb.Timestamp)(nil),   // 22: google.protobuf.Timestamp
 }
 var file_proto_templates_console_v1_admin_proto_depIdxs = []int32{
-	4,  // 0: templates.console.v1.ListTemplatesResponse.templates:type_name -> templates.console.v1.TemplateSummary
-	18, // 1: templates.console.v1.TemplateSummary.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 2: templates.console.v1.GetTemplateResponse.versions:type_name -> templates.console.v1.VersionSummary
-	8,  // 3: templates.console.v1.GetTemplateResponse.content:type_name -> templates.console.v1.Version
-	18, // 4: templates.console.v1.VersionSummary.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 5: templates.console.v1.Version.parts:type_name -> templates.console.v1.Part
-	18, // 6: templates.console.v1.Version.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 7: templates.console.v1.SaveTemplateRequest.parts:type_name -> templates.console.v1.Part
-	1,  // 8: templates.console.v1.SaveTemplateResponse.problems:type_name -> templates.console.v1.Problem
-	0,  // 9: templates.console.v1.PreviewRequest.parts:type_name -> templates.console.v1.Part
-	17, // 10: templates.console.v1.PreviewResponse.parts:type_name -> templates.console.v1.PreviewResponse.PartsEntry
-	1,  // 11: templates.console.v1.PreviewResponse.problems:type_name -> templates.console.v1.Problem
-	2,  // 12: templates.console.v1.AdminService.ListTemplates:input_type -> templates.console.v1.ListTemplatesRequest
-	5,  // 13: templates.console.v1.AdminService.GetTemplate:input_type -> templates.console.v1.GetTemplateRequest
-	9,  // 14: templates.console.v1.AdminService.SaveTemplate:input_type -> templates.console.v1.SaveTemplateRequest
-	11, // 15: templates.console.v1.AdminService.ActivateVersion:input_type -> templates.console.v1.ActivateVersionRequest
-	13, // 16: templates.console.v1.AdminService.DeleteTemplate:input_type -> templates.console.v1.DeleteTemplateRequest
-	15, // 17: templates.console.v1.AdminService.Preview:input_type -> templates.console.v1.PreviewRequest
-	3,  // 18: templates.console.v1.AdminService.ListTemplates:output_type -> templates.console.v1.ListTemplatesResponse
-	6,  // 19: templates.console.v1.AdminService.GetTemplate:output_type -> templates.console.v1.GetTemplateResponse
-	10, // 20: templates.console.v1.AdminService.SaveTemplate:output_type -> templates.console.v1.SaveTemplateResponse
-	12, // 21: templates.console.v1.AdminService.ActivateVersion:output_type -> templates.console.v1.ActivateVersionResponse
-	14, // 22: templates.console.v1.AdminService.DeleteTemplate:output_type -> templates.console.v1.DeleteTemplateResponse
-	16, // 23: templates.console.v1.AdminService.Preview:output_type -> templates.console.v1.PreviewResponse
-	18, // [18:24] is the sub-list for method output_type
-	12, // [12:18] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	20, // 0: templates.console.v1.Translation.sources:type_name -> templates.console.v1.Translation.SourcesEntry
+	7,  // 1: templates.console.v1.ListTemplatesResponse.templates:type_name -> templates.console.v1.TemplateSummary
+	22, // 2: templates.console.v1.TemplateSummary.updated_at:type_name -> google.protobuf.Timestamp
+	10, // 3: templates.console.v1.GetTemplateResponse.versions:type_name -> templates.console.v1.VersionSummary
+	11, // 4: templates.console.v1.GetTemplateResponse.content:type_name -> templates.console.v1.Version
+	22, // 5: templates.console.v1.VersionSummary.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 6: templates.console.v1.Version.parts:type_name -> templates.console.v1.Part
+	1,  // 7: templates.console.v1.Version.translations:type_name -> templates.console.v1.Translation
+	22, // 8: templates.console.v1.Version.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 9: templates.console.v1.SaveTemplateRequest.parts:type_name -> templates.console.v1.Part
+	1,  // 10: templates.console.v1.SaveTemplateRequest.translations:type_name -> templates.console.v1.Translation
+	2,  // 11: templates.console.v1.SaveTemplateResponse.problems:type_name -> templates.console.v1.Problem
+	0,  // 12: templates.console.v1.PreviewRequest.parts:type_name -> templates.console.v1.Part
+	1,  // 13: templates.console.v1.PreviewRequest.translation:type_name -> templates.console.v1.Translation
+	21, // 14: templates.console.v1.PreviewResponse.parts:type_name -> templates.console.v1.PreviewResponse.PartsEntry
+	2,  // 15: templates.console.v1.PreviewResponse.problems:type_name -> templates.console.v1.Problem
+	3,  // 16: templates.console.v1.AdminService.GetSettings:input_type -> templates.console.v1.GetSettingsRequest
+	5,  // 17: templates.console.v1.AdminService.ListTemplates:input_type -> templates.console.v1.ListTemplatesRequest
+	8,  // 18: templates.console.v1.AdminService.GetTemplate:input_type -> templates.console.v1.GetTemplateRequest
+	12, // 19: templates.console.v1.AdminService.SaveTemplate:input_type -> templates.console.v1.SaveTemplateRequest
+	14, // 20: templates.console.v1.AdminService.ActivateVersion:input_type -> templates.console.v1.ActivateVersionRequest
+	16, // 21: templates.console.v1.AdminService.DeleteTemplate:input_type -> templates.console.v1.DeleteTemplateRequest
+	18, // 22: templates.console.v1.AdminService.Preview:input_type -> templates.console.v1.PreviewRequest
+	4,  // 23: templates.console.v1.AdminService.GetSettings:output_type -> templates.console.v1.GetSettingsResponse
+	6,  // 24: templates.console.v1.AdminService.ListTemplates:output_type -> templates.console.v1.ListTemplatesResponse
+	9,  // 25: templates.console.v1.AdminService.GetTemplate:output_type -> templates.console.v1.GetTemplateResponse
+	13, // 26: templates.console.v1.AdminService.SaveTemplate:output_type -> templates.console.v1.SaveTemplateResponse
+	15, // 27: templates.console.v1.AdminService.ActivateVersion:output_type -> templates.console.v1.ActivateVersionResponse
+	17, // 28: templates.console.v1.AdminService.DeleteTemplate:output_type -> templates.console.v1.DeleteTemplateResponse
+	19, // 29: templates.console.v1.AdminService.Preview:output_type -> templates.console.v1.PreviewResponse
+	23, // [23:30] is the sub-list for method output_type
+	16, // [16:23] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_proto_templates_console_v1_admin_proto_init() }
@@ -1175,7 +1429,7 @@ func file_proto_templates_console_v1_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_templates_console_v1_admin_proto_rawDesc), len(file_proto_templates_console_v1_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

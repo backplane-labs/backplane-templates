@@ -1,11 +1,10 @@
 // Package templates is the service's domain component: the Render
-// activity over the installation's templates, with a cache of compiled
-// versions that follows the active pointers.
+// activity over the installation's templates in their languages, with a
+// cache of compiled versions that follows the active pointers.
 package templates
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -25,34 +24,42 @@ import (
 	"github.com/backplane-labs/backplane-templates/internal/store/db"
 )
 
-const renderTimeout = 10 * time.Second
+const (
+	renderTimeout = 10 * time.Second
+	// maxCached bounds compiled entries (template × language).
+	maxCached = 4096
+)
 
 // Errors of Render; final ones are wrapped NonRetryable.
 var (
 	ErrNotFound    = errors.New("templates: no such template")
 	ErrNotActive   = errors.New("templates: no version activated")
+	ErrNoLanguage  = errors.New("templates: no translation for the language")
 	ErrUnavailable = errors.New("templates: store unavailable")
 )
 
 // Settings of the component: what the service configuration decides.
 type Settings struct {
-	// Live: the locale a render falls back to (name@locale → name@default → name).
-	DefaultLocale config.Live[string]
+	// Live: the languages the editor offers, in order.
+	Languages config.Live[[]string]
+	// Live: the language renders fall back to after the template's own.
+	DefaultLanguage config.Live[string]
 }
 
 // Payloads of the activity.
 type (
-	// RenderIn names a template and gives it data.
+	// RenderIn names a template, a language and data.
 	RenderIn struct {
 		Template string `json:"template" schemapb:"description=Template name"`
-		// Locale picks a variant: name@locale, then name@default, then name.
-		Locale string         `json:"locale,omitempty"`
-		Data   map[string]any `json:"data"             schemapb:"description=What the parts render: any JSON object"`
+		// Language: BCP 47 (ru, pt-BR); falls back to its base language,
+		// then the template's default, then the installation's.
+		Language string         `json:"language,omitempty"`
+		Data     map[string]any `json:"data"               schemapb:"description=What the parts render: any JSON object"`
 	}
 	// RenderOut is every part rendered.
 	RenderOut struct {
 		Parts    map[string]string `json:"parts"    schemapb:"description=Rendered parts by name: subject, text, html, ..."`
-		Template string            `json:"template" schemapb:"description=The variant that rendered"`
+		Language string            `json:"language" schemapb:"description=The language that rendered"`
 		Version  int64             `json:"version"`
 	}
 )
@@ -74,6 +81,7 @@ type Templates struct {
 type cached struct {
 	key      string
 	version  int64
+	language string
 	compiled *engine.Compiled
 }
 
@@ -82,11 +90,12 @@ func New(parent deps.Scope, st deps.Dependency[*store.Store], set Settings) (*Te
 	t := &Templates{Component: deps.NewComponent(parent, "templates"), set: set, store: st, cache: map[string]cached{}}
 
 	activity.Handle(t, "Render", t.Render, activity.StartToClose(renderTimeout),
-		activity.Describe("renders a template of the installation with data: every part, escaped by its kind"))
+		activity.Describe("renders a template of the installation in a language with data: every part, escaped by its kind"))
 
 	var err error
 
-	t.renders, err = t.Meter().Int64Counter("templates.renders", metric.WithDescription("Renders by template and outcome"))
+	t.renders, err = t.Meter().Int64Counter("templates.renders",
+		metric.WithDescription("Renders by template, language and outcome"))
 	if err != nil {
 		return nil, fmt.Errorf("templates metrics: %w", err)
 	}
@@ -114,7 +123,8 @@ func (t *Templates) Render(ctx context.Context, in RenderIn) (RenderOut, error) 
 		outcome = "failed"
 	}
 
-	attrs := metric.WithAttributes(attribute.String("template", in.Template), attribute.String("outcome", outcome))
+	attrs := metric.WithAttributes(attribute.String("template", in.Template), attribute.String("language", out.Language),
+		attribute.String("outcome", outcome))
 	t.renders.Add(ctx, 1, attrs)
 	t.duration.Record(ctx, time.Since(started).Seconds(), attrs)
 
@@ -130,50 +140,36 @@ func (t *Templates) render(ctx context.Context, in RenderIn) (RenderOut, error) 
 		return RenderOut{}, fmt.Errorf("%w: %w", ErrUnavailable, t.store.Err())
 	}
 
-	for _, name := range t.candidates(in.Template, in.Locale) {
-		c, err := t.compiled(ctx, name)
-		if errors.Is(err, ErrNotFound) {
-			continue
-		}
-
-		if err != nil {
-			return RenderOut{}, err
-		}
-
-		data := in.Data
-		if data == nil {
-			data = map[string]any{}
-		}
-
-		parts, err := c.compiled.Render(data)
-		if err != nil {
-			return RenderOut{}, activity.NonRetryable(fmt.Errorf("%s: %w", name, err)) //nolint:wrapcheck // final
-		}
-
-		return RenderOut{Parts: parts, Template: name, Version: c.version}, nil
+	c, err := t.compiled(ctx, in.Template, in.Language)
+	if err != nil {
+		return RenderOut{}, err
 	}
 
-	return RenderOut{}, activity.NonRetryable(fmt.Errorf("%w: %s", ErrNotFound, in.Template)) //nolint:wrapcheck // final
+	data := in.Data
+	if data == nil {
+		data = map[string]any{}
+	}
+
+	if err := engine.CheckData(data); err != nil {
+		return RenderOut{}, activity.NonRetryable(err) //nolint:wrapcheck // final
+	}
+
+	parts, err := c.compiled.Render(data)
+	if errors.Is(err, engine.ErrBusy) {
+		return RenderOut{Language: c.language}, fmt.Errorf("%s: %w", in.Template, err)
+	}
+
+	if err != nil {
+		return RenderOut{Language: c.language}, activity.NonRetryable(fmt.Errorf("%s@%s: %w", in.Template, c.language, err)) //nolint:wrapcheck,lll // final
+	}
+
+	return RenderOut{Parts: parts, Language: c.language, Version: c.version}, nil
 }
 
-// candidates are the variants tried in order: name@locale, name@default, name.
-func (t *Templates) candidates(name, locale string) []string {
-	var out []string
-
-	if locale != "" {
-		out = append(out, name+"@"+locale)
-	}
-
-	if def := t.set.DefaultLocale.Get(); def != "" && def != locale {
-		out = append(out, name+"@"+def)
-	}
-
-	return append(out, name)
-}
-
-// compiled is the template's active version, compiled with the active
-// shared pieces; a cache entry is reused while none of them changed.
-func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
+// compiled is the template's active version in the language picked for
+// asked, compiled with the active shared pieces in that language; an
+// entry is reused while none of their versions changed.
+func (t *Templates) compiled(ctx context.Context, name, asked string) (cached, error) {
 	st := t.store.Get()
 
 	active, err := st.Q.ActiveVersions(ctx, name)
@@ -182,64 +178,95 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 	}
 
 	key, version, found := cacheKey(sortedByName(active), name)
-
 	if !found {
-		return cached{}, ErrNotFound
+		return cached{}, activity.NonRetryable(fmt.Errorf("%w: %s", ErrNotFound, name)) //nolint:wrapcheck // final
 	}
 
 	if version == 0 {
 		return cached{}, activity.NonRetryable(fmt.Errorf("%w: %s", ErrNotActive, name)) //nolint:wrapcheck // final
 	}
 
+	// The slot is per canonical language tag, and the cache is bounded:
+	// callers' strings cannot grow it without limit.
+	if canonical, err := engine.ParseLanguage(asked); err == nil {
+		asked = canonical
+	} else {
+		asked = ""
+	}
+
+	slot := name + "|" + asked
+
 	t.mu.Lock()
-	entry, ok := t.cache[name]
+	entry, ok := t.cache[slot]
 	t.mu.Unlock()
 
 	if ok && entry.key == key {
 		return entry, nil
 	}
 
+	entry, err = t.load(ctx, st, name, asked)
+	if err != nil {
+		return cached{}, err
+	}
+
+	t.mu.Lock()
+	if len(t.cache) >= maxCached {
+		clear(t.cache)
+	}
+
+	t.cache[slot] = entry
+	t.mu.Unlock()
+
+	return entry, nil
+}
+
+// load reads and compiles; the entry is keyed by what was loaded, not by
+// what was asked: an activation between the reads gives a key that
+// differs from the next lookup's, so the entry is rebuilt instead of
+// serving a mix.
+func (t *Templates) load(ctx context.Context, st *store.Store, name, asked string) (cached, error) {
 	row, err := st.Q.GetActiveVersion(ctx, name)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return cached{}, ErrNotFound
+		return cached{}, activity.NonRetryable(fmt.Errorf("%w: %s", ErrNotFound, name)) //nolint:wrapcheck // final
 	}
 
 	if err != nil {
 		return cached{}, fmt.Errorf("templates: load %s: %w", name, err)
 	}
 
-	partials, loaded, err := activePartials(ctx, st)
+	content, err := DecodeContent(row.Parts, row.Translations, row.DefaultLanguage)
+	if err != nil {
+		return cached{}, activity.NonRetryable(err) //nolint:wrapcheck // final
+	}
+
+	lang := content.Pick(asked, content.Default, t.set.DefaultLanguage.Get())
+	if lang == "" {
+		err := fmt.Errorf("%w: %s %q", ErrNoLanguage, name, asked)
+
+		return cached{}, activity.NonRetryable(err) //nolint:wrapcheck // final
+	}
+
+	partials, loaded, err := ActivePartials(ctx, st, lang)
 	if err != nil {
 		return cached{}, err
 	}
 
-	var parts []engine.Part
-	if err := json.Unmarshal(row.Parts, &parts); err != nil {
-		return cached{}, activity.NonRetryable(fmt.Errorf("templates: %s: parts: %w", name, err)) //nolint:wrapcheck // final
-	}
-
-	c, err := engine.Compile(parts, partials)
+	c, err := engine.Compile(content.In(lang), partials, lang)
 	if err != nil {
-		return cached{}, activity.NonRetryable(fmt.Errorf("templates: %s: %w", name, err)) //nolint:wrapcheck // final
+		err = fmt.Errorf("templates: %s@%s: %w", name, lang, err)
+
+		return cached{}, activity.NonRetryable(err) //nolint:wrapcheck // final
 	}
 
-	// The entry is keyed by what was loaded, not by what was asked: an
-	// activation between the reads gives a key that differs from the next
-	// lookup's, so the entry is rebuilt instead of serving a mix.
 	loaded = append(loaded, db.ActiveVersionsRow{Name: name, ActiveVersion: &row.Version})
-	key, _, _ = cacheKey(sortedByName(loaded), name)
+	key, _, _ := cacheKey(sortedByName(loaded), name)
 
-	entry = cached{key: key, version: row.Version, compiled: c}
-
-	t.mu.Lock()
-	t.cache[name] = entry
-	t.mu.Unlock()
-
-	return entry, nil
+	return cached{key: key, version: row.Version, language: lang, compiled: c}, nil
 }
 
-// cacheKey is the active version of the template and of every shared
-// piece, as one string: a compiled entry is valid while it is unchanged.
+// cacheKey is the active version of the template and of every activated
+// shared piece, as one string: a compiled entry is valid while it is
+// unchanged.
 func cacheKey(active []db.ActiveVersionsRow, name string) (string, int64, bool) {
 	var (
 		key     strings.Builder
@@ -265,15 +292,11 @@ func cacheKey(active []db.ActiveVersionsRow, name string) (string, int64, bool) 
 	return key.String(), version, found
 }
 
-// Partials are the active shared pieces (templates named "_x").
-func Partials(ctx context.Context, st *store.Store) ([]engine.Partial, error) {
-	out, _, err := activePartials(ctx, st)
-
-	return out, err
-}
-
-// activePartials are the shared pieces with the versions they were read at.
-func activePartials(ctx context.Context, st *store.Store) ([]engine.Partial, []db.ActiveVersionsRow, error) {
+// ActivePartials are the active shared pieces (templates named "_x") in
+// lang (or their closest language), with the versions they were read at.
+func ActivePartials(
+	ctx context.Context, st *store.Store, lang string,
+) ([]engine.Partial, []db.ActiveVersionsRow, error) {
 	rows, err := st.Q.ListActivePartials(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("templates: partials: %w", err)
@@ -283,12 +306,12 @@ func activePartials(ctx context.Context, st *store.Store) ([]engine.Partial, []d
 	versions := make([]db.ActiveVersionsRow, 0, len(rows)+1)
 
 	for _, r := range rows {
-		var parts []engine.Part
-		if err := json.Unmarshal(r.Parts, &parts); err != nil {
+		content, err := DecodeContent(r.Parts, r.Translations, r.DefaultLanguage)
+		if err != nil {
 			return nil, nil, fmt.Errorf("templates: partial %s: %w", r.Name, err)
 		}
 
-		out = append(out, engine.Partial{Name: r.Name, Parts: parts})
+		out = append(out, engine.Partial{Name: r.Name, Parts: content.In(content.Pick(lang, content.Default))})
 		versions = append(versions, db.ActiveVersionsRow{Name: r.Name, ActiveVersion: &r.Version})
 	}
 
@@ -300,14 +323,4 @@ func sortedByName(rows []db.ActiveVersionsRow) []db.ActiveVersionsRow {
 	slices.SortFunc(rows, func(a, b db.ActiveVersionsRow) int { return strings.Compare(a.Name, b.Name) })
 
 	return rows
-}
-
-// DecodeParts reads a version's parts.
-func DecodeParts(raw []byte) ([]engine.Part, error) {
-	var parts []engine.Part
-	if err := json.Unmarshal(raw, &parts); err != nil {
-		return nil, fmt.Errorf("templates: parts: %w", err)
-	}
-
-	return parts, nil
 }

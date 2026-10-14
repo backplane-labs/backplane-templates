@@ -12,15 +12,20 @@ CREATE TABLE templates.template (
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
 
--- A version is immutable: a save is a new one. parts is the list of
--- {name, kind, source}; sample is the data the console previews with.
+-- A version is immutable: a save is a new one, every language at once.
+-- parts is the structure every language shares: [{name, kind}];
+-- translations is {language: {part: source}}; default_language renders
+-- when the asked language and its base are missing; sample is the data
+-- the console previews with.
 CREATE TABLE templates.template_version (
-  name       text        NOT NULL REFERENCES templates.template (name) ON DELETE CASCADE,
-  version    bigint      NOT NULL,
-  parts      jsonb       NOT NULL,
-  sample     jsonb       NOT NULL DEFAULT '{}'::jsonb,
-  author     text        NOT NULL DEFAULT '',
-  comment    text        NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now(),
+  name             text        NOT NULL REFERENCES templates.template (name) ON DELETE CASCADE,
+  version          bigint      NOT NULL,
+  parts            jsonb       NOT NULL,
+  translations     jsonb       NOT NULL,
+  default_language text        NOT NULL,
+  sample           jsonb       NOT NULL DEFAULT '{}'::jsonb,
+  author           text        NOT NULL DEFAULT '',
+  comment          text        NOT NULL DEFAULT '',
+  created_at       timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (name, version)
 );

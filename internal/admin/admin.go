@@ -29,9 +29,8 @@ import (
 	templatesconsolev1 "github.com/backplane-labs/backplane-templates/proto/templates/console/v1"
 )
 
-// Template names: dotted words, an optional @locale, a leading "_" for a
-// shared piece.
-var namePattern = regexp.MustCompile(`^_?[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*(?:@[a-z]{2}(?:-[A-Za-z]{2,4})?)?$`)
+// Template names: dotted words, a leading "_" for a shared piece.
+var namePattern = regexp.MustCompile(`^_?[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
 
 const maxDescription = 1024
 
@@ -47,6 +46,34 @@ type Admin struct {
 // New creates the admin component under parent.
 func New(parent deps.Scope, st deps.Dependency[*store.Store], t *templates.Templates) *Admin {
 	return &Admin{Component: deps.NewComponent(parent, "admin"), store: st, templates: t}
+}
+
+// GetSettings implements AdminService.
+func (a *Admin) GetSettings(
+	_ context.Context, _ *templatesconsolev1.GetSettingsRequest,
+) (*templatesconsolev1.GetSettingsResponse, error) {
+	set := a.templates.Settings()
+	def := set.DefaultLanguage.Get()
+
+	langs := []string{def}
+
+	for _, l := range set.Languages.Get() {
+		if canonical, err := engine.ParseLanguage(l); err == nil && canonical != def && !contains(langs, canonical) {
+			langs = append(langs, canonical)
+		}
+	}
+
+	return &templatesconsolev1.GetSettingsResponse{Languages: langs, DefaultLanguage: def}, nil
+}
+
+func contains(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ListTemplates implements AdminService.
@@ -65,7 +92,8 @@ func (a *Admin) ListTemplates(
 
 	out := &templatesconsolev1.ListTemplatesResponse{}
 
-	for _, r := range rows {
+	for i := range rows {
+		r := &rows[i]
 		summary := &templatesconsolev1.TemplateSummary{
 			Name: r.Name, Description: r.Description, Versions: r.Versions, UpdatedAt: timestamppb.New(r.UpdatedAt),
 		}
@@ -74,11 +102,14 @@ func (a *Admin) ListTemplates(
 			summary.ActiveVersion = *r.ActiveVersion
 		}
 
-		if len(r.ActiveParts) > 0 {
-			if parts, err := templates.DecodeParts(r.ActiveParts); err == nil {
-				for _, p := range parts {
+		if r.ActiveDefault != nil {
+			if content, err := templates.DecodeContent(r.ActiveParts, r.ActiveTranslations, *r.ActiveDefault); err == nil {
+				for _, p := range content.Parts {
 					summary.Parts = append(summary.Parts, p.Name)
 				}
+
+				summary.Languages, summary.DefaultLanguage = content.Languages(), content.Default
+				summary.Incomplete = content.Incomplete()
 			}
 		}
 
@@ -139,33 +170,52 @@ func (a *Admin) GetTemplate(
 		return out, nil
 	}
 
-	row, err := st.Q.GetVersion(ctx, db.GetVersionParams{Name: t.Name, Version: want})
+	if out.Content, err = a.version(ctx, st, t.Name, want); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (a *Admin) version(
+	ctx context.Context, st *store.Store, name string, want int64,
+) (*templatesconsolev1.Version, error) {
+	row, err := st.Q.GetVersion(ctx, db.GetVersionParams{Name: name, Version: want})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, status.Errorf(codes.NotFound, "template %q has no version %d", req.GetName(), want)
+		return nil, status.Errorf(codes.NotFound, "template %q has no version %d", name, want)
 	}
 
 	if err != nil {
 		return nil, a.failed("get version", err)
 	}
 
-	parts, err := templates.DecodeParts(row.Parts)
+	content, err := templates.DecodeContent(row.Parts, row.Translations, row.DefaultLanguage)
 	if err != nil {
-		return nil, a.failed("decode parts", err)
+		return nil, a.failed("decode version", err)
 	}
 
-	out.Content = &templatesconsolev1.Version{
-		Version: row.Version, Parts: toProto(parts), Sample: string(row.Sample), Author: row.Author, Comment: row.Comment,
-		CreatedAt: timestamppb.New(row.CreatedAt),
+	v := &templatesconsolev1.Version{
+		Version: row.Version, DefaultLanguage: content.Default, Sample: string(row.Sample), Author: row.Author,
+		Comment: row.Comment, CreatedAt: timestamppb.New(row.CreatedAt),
 	}
 
-	return out, nil
+	for _, p := range content.Parts {
+		v.Parts = append(v.Parts, &templatesconsolev1.Part{Name: p.Name, Kind: p.Kind})
+	}
+
+	for _, lang := range content.Languages() {
+		v.Translations = append(v.Translations,
+			&templatesconsolev1.Translation{Language: lang, Sources: content.Translations[lang]})
+	}
+
+	return v, nil
 }
 
 // SaveTemplate implements AdminService.
 func (a *Admin) SaveTemplate(
 	ctx context.Context, req *templatesconsolev1.SaveTemplateRequest,
 ) (*templatesconsolev1.SaveTemplateResponse, error) {
-	parts, sample, err := checkSave(req)
+	content, sample, err := checkSave(req)
 	if err != nil {
 		return nil, err
 	}
@@ -175,21 +225,14 @@ func (a *Admin) SaveTemplate(
 		return nil, err
 	}
 
-	partials, err := templates.Partials(ctx, st)
+	problems, err := a.compileAll(ctx, st, content, sample)
 	if err != nil {
-		return nil, a.failed("partials", err)
+		return nil, err
 	}
 
-	compiled, err := engine.Compile(parts, partials)
+	partsJSON, translationsJSON, err := content.Encode()
 	if err != nil {
-		return nil, invalid(err)
-	}
-
-	problems := render(compiled, sample)
-
-	partsJSON, err := json.Marshal(parts)
-	if err != nil {
-		return nil, a.failed("encode parts", err)
+		return nil, a.failed("encode", err)
 	}
 
 	sampleJSON, err := json.Marshal(sample)
@@ -213,8 +256,8 @@ func (a *Admin) SaveTemplate(
 		out.Version = next.Version
 
 		if err := st.Q.InsertVersion(ctx, db.InsertVersionParams{
-			Name: req.GetName(), Version: next.Version, Parts: partsJSON, Sample: sampleJSON,
-			Author: "console", Comment: req.GetComment(),
+			Name: req.GetName(), Version: next.Version, Parts: partsJSON, Translations: translationsJSON,
+			DefaultLanguage: content.Default, Sample: sampleJSON, Author: "console", Comment: req.GetComment(),
 		}); err != nil {
 			return fmt.Errorf("insert version: %w", err)
 		}
@@ -235,37 +278,97 @@ func (a *Admin) SaveTemplate(
 	}
 
 	a.audit(ctx, "template.saved", req.GetName(), xlog.Int64("version", out.GetVersion()),
-		xlog.Bool("activated", out.GetActivated()), xlog.Int("problems", len(problems)))
+		xlog.Bool("activated", out.GetActivated()), xlog.Int("problems", len(problems)),
+		xlog.String("languages", strings.Join(content.Languages(), ",")))
 
 	return out, nil
+}
+
+// compileAll compiles every language (a failure refuses the save) and
+// renders the sample in each (a failure is a problem reported).
+func (a *Admin) compileAll(
+	ctx context.Context, st *store.Store, content templates.Content, sample map[string]any,
+) ([]*templatesconsolev1.Problem, error) {
+	var (
+		problems []*templatesconsolev1.Problem
+		refused  []string
+	)
+
+	for _, lang := range content.Languages() {
+		partials, _, err := templates.ActivePartials(ctx, st, lang)
+		if err != nil {
+			return nil, a.failed("partials", err)
+		}
+
+		compiled, err := engine.Compile(content.In(lang), partials, lang)
+		if err != nil {
+			for _, p := range problemsOf(lang, err) {
+				refused = append(refused, lang+"/"+p.GetPart()+": "+p.GetMessage())
+			}
+
+			if len(engine.Problems(err)) == 0 {
+				refused = append(refused, lang+": "+err.Error())
+			}
+
+			continue
+		}
+
+		if _, err := compiled.Render(sample); err != nil {
+			problems = append(problems, problemsOf(lang, err)...)
+		}
+	}
+
+	if len(refused) > 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", "sources do not compile; "+strings.Join(refused, "; "))
+	}
+
+	return problems, nil
 }
 
 // checkName refuses a name that is not a template name.
 func checkName(name string) error {
 	if !namePattern.MatchString(name) {
 		return status.Errorf(codes.InvalidArgument, "%s",
-			"name must be dotted lower-case words, optionally @locale; a shared piece starts with _")
+			"name must be dotted lower-case words; a shared piece starts with _")
 	}
 
 	return nil
 }
 
-// checkSave validates a save's name, description and sample.
-func checkSave(req *templatesconsolev1.SaveTemplateRequest) ([]engine.Part, map[string]any, error) {
+// checkSave validates a save's name, description, content and sample.
+func checkSave(req *templatesconsolev1.SaveTemplateRequest) (templates.Content, map[string]any, error) {
 	if err := checkName(req.GetName()); err != nil {
-		return nil, nil, err
+		return templates.Content{}, nil, err
 	}
 
 	if len(req.GetDescription()) > maxDescription {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "%s", "description is too long")
+		return templates.Content{}, nil, status.Errorf(codes.InvalidArgument, "%s", "description is too long")
 	}
 
 	sample, err := sampleOf(req.GetSample())
 	if err != nil {
-		return nil, nil, err
+		return templates.Content{}, nil, err
 	}
 
-	return fromProto(req.GetParts()), sample, nil
+	content := templates.Content{Default: req.GetDefaultLanguage(), Translations: map[string]map[string]string{}}
+
+	for _, p := range req.GetParts() {
+		content.Parts = append(content.Parts, engine.Part{Name: p.GetName(), Kind: p.GetKind()})
+	}
+
+	for _, tr := range req.GetTranslations() {
+		if _, dup := content.Translations[tr.GetLanguage()]; dup {
+			return templates.Content{}, nil, status.Errorf(codes.InvalidArgument, "language %q twice", tr.GetLanguage())
+		}
+
+		content.Translations[tr.GetLanguage()] = tr.GetSources()
+	}
+
+	if err := content.Check(); err != nil {
+		return templates.Content{}, nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+	}
+
+	return content, sample, nil
 }
 
 // ActivateVersion implements AdminService.
@@ -329,35 +432,46 @@ func (a *Admin) Preview(
 		return nil, err
 	}
 
+	lang, err := engine.ParseLanguage(req.GetTranslation().GetLanguage())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+	}
+
+	sources := req.GetTranslation().GetSources()
+	parts := make([]engine.Part, 0, len(req.GetParts()))
+
+	for _, p := range req.GetParts() {
+		parts = append(parts, engine.Part{Name: p.GetName(), Kind: p.GetKind(), Source: sources[p.GetName()]})
+	}
+
+	if err := engine.Check(parts); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
+	}
+
 	st, err := a.ready()
 	if err != nil {
 		return nil, err
 	}
 
-	partials, err := templates.Partials(ctx, st)
+	partials, _, err := templates.ActivePartials(ctx, st, lang)
 	if err != nil {
 		return nil, a.failed("partials", err)
-	}
-
-	parts := fromProto(req.GetParts())
-	if err := engine.Check(parts); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err.Error())
 	}
 
 	out := &templatesconsolev1.PreviewResponse{Parts: map[string]string{}}
 
 	// Every part on its own, so one broken part does not hide the rest.
 	for _, p := range parts {
-		compiled, err := engine.Compile([]engine.Part{p}, partials)
+		compiled, err := engine.Compile([]engine.Part{p}, partials, lang)
 		if err != nil {
-			out.Problems = append(out.Problems, problemsOf(err)...)
+			out.Problems = append(out.Problems, problemsOf(lang, err)...)
 
 			continue
 		}
 
 		rendered, err := compiled.Render(data)
 		if err != nil {
-			out.Problems = append(out.Problems, problemsOf(err)...)
+			out.Problems = append(out.Problems, problemsOf(lang, err)...)
 
 			continue
 		}
@@ -368,42 +482,19 @@ func (a *Admin) Preview(
 	return out, nil
 }
 
-// render reports the sample not rendering, by part.
-func render(c *engine.Compiled, sample map[string]any) []*templatesconsolev1.Problem {
-	if _, err := c.Render(sample); err != nil {
-		return problemsOf(err)
-	}
-
-	return nil
-}
-
-func problemsOf(err error) []*templatesconsolev1.Problem {
+func problemsOf(lang string, err error) []*templatesconsolev1.Problem {
 	problems := engine.Problems(err)
 	out := make([]*templatesconsolev1.Problem, 0, len(problems))
 
 	for _, p := range problems {
-		out = append(out, &templatesconsolev1.Problem{Part: p.Part, Message: p.Message})
+		out = append(out, &templatesconsolev1.Problem{Language: lang, Part: p.Part, Message: p.Message})
+	}
+
+	if len(problems) == 0 && err != nil {
+		out = append(out, &templatesconsolev1.Problem{Language: lang, Message: err.Error()})
 	}
 
 	return out
-}
-
-// invalid is a parse failure as the caller's mistake, with every part's
-// problem in the message.
-func invalid(err error) error {
-	problems := engine.Problems(err)
-	if len(problems) == 0 {
-		return status.Errorf(codes.InvalidArgument, "%s", err.Error())
-	}
-
-	lines := make([]string, 0, len(problems)+1)
-	lines = append(lines, "parts do not parse")
-
-	for _, p := range problems {
-		lines = append(lines, p.Error())
-	}
-
-	return status.Errorf(codes.InvalidArgument, "%s", strings.Join(lines, "; "))
 }
 
 // sampleOf parses a JSON object, "" being empty.
@@ -414,24 +505,6 @@ func sampleOf(raw string) (map[string]any, error) {
 	}
 
 	return data, nil
-}
-
-func toProto(parts []engine.Part) []*templatesconsolev1.Part {
-	out := make([]*templatesconsolev1.Part, 0, len(parts))
-	for _, p := range parts {
-		out = append(out, &templatesconsolev1.Part{Name: p.Name, Kind: p.Kind, Source: p.Source})
-	}
-
-	return out
-}
-
-func fromProto(parts []*templatesconsolev1.Part) []engine.Part {
-	out := make([]engine.Part, 0, len(parts))
-	for _, p := range parts {
-		out = append(out, engine.Part{Name: p.GetName(), Kind: p.GetKind(), Source: p.GetSource()})
-	}
-
-	return out
 }
 
 // ready is the store, or Unavailable.

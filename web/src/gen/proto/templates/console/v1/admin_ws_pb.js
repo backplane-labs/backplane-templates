@@ -3,7 +3,14 @@
 /* eslint-disable */
 
 import { applyUnaryCallbacks } from "@gopherex/ws-proto-transport";
-import { ActivateVersionRequestSchema, ActivateVersionResponseSchema, DeleteTemplateRequestSchema, DeleteTemplateResponseSchema, GetTemplateRequestSchema, GetTemplateResponseSchema, ListTemplatesRequestSchema, ListTemplatesResponseSchema, PreviewRequestSchema, PreviewResponseSchema, SaveTemplateRequestSchema, SaveTemplateResponseSchema } from "./admin_pb";
+import { ActivateVersionRequestSchema, ActivateVersionResponseSchema, DeleteTemplateRequestSchema, DeleteTemplateResponseSchema, GetSettingsRequestSchema, GetSettingsResponseSchema, GetTemplateRequestSchema, GetTemplateResponseSchema, ListTemplatesRequestSchema, ListTemplatesResponseSchema, PreviewRequestSchema, PreviewResponseSchema, SaveTemplateRequestSchema, SaveTemplateResponseSchema } from "./admin_pb";
+const AdminService_GetSettings = {
+    typeName: "templates.console.v1.AdminService",
+    name: "GetSettings",
+    kind: "unary",
+    input: GetSettingsRequestSchema,
+    output: GetSettingsResponseSchema,
+};
 const AdminService_ListTemplates = {
     typeName: "templates.console.v1.AdminService",
     name: "ListTemplates",
@@ -58,7 +65,16 @@ export class AdminServiceClient {
         this.transport = transport;
     }
     /**
-     * Every template with its active version's part names.
+     * The installation's languages, for the editor.
+     *
+     * @generated from rpc templates.console.v1.AdminService.GetSettings
+     */
+    async getSettings(req, options) {
+        const res = await this.transport.unary(AdminService_GetSettings, req, { headers: options === null || options === void 0 ? void 0 : options.headers, signal: options === null || options === void 0 ? void 0 : options.signal, timeoutMs: options === null || options === void 0 ? void 0 : options.timeoutMs });
+        return applyUnaryCallbacks(res, options);
+    }
+    /**
+     * Every template with its active version's parts and languages.
      *
      * @generated from rpc templates.console.v1.AdminService.ListTemplates
      */
@@ -77,10 +93,10 @@ export class AdminServiceClient {
         return applyUnaryCallbacks(res, options);
     }
     /**
-     * Stores a new version (creating the template on first save). A part
-     * that does not parse refuses the save; the sample not rendering is a
-     * problem reported, the version still saved. The first version is
-     * activated; later ones when asked.
+     * Stores a new version with every language (creating the template on
+     * first save). A source that does not compile refuses the save; the
+     * sample not rendering is a problem reported, the version still saved.
+     * The first version is activated; later ones when asked.
      *
      * @generated from rpc templates.console.v1.AdminService.SaveTemplate
      */
@@ -108,8 +124,8 @@ export class AdminServiceClient {
         return applyUnaryCallbacks(res, options);
     }
     /**
-     * Renders parts with data on the server, with the installation's
-     * current shared pieces; nothing is stored.
+     * Renders one language of a draft with data on the server, with the
+     * installation's active shared pieces; nothing is stored.
      *
      * @generated from rpc templates.console.v1.AdminService.Preview
      */

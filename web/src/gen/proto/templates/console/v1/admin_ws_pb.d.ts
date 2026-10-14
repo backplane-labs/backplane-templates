@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import { WsTransport } from "@gopherex/ws-proto-transport";
-import type { ActivateVersionRequest, ActivateVersionResponse, DeleteTemplateRequest, DeleteTemplateResponse, GetTemplateRequest, GetTemplateResponse, ListTemplatesRequest, ListTemplatesResponse, PreviewRequest, PreviewResponse, SaveTemplateRequest, SaveTemplateResponse } from "./admin_pb";
+import type { ActivateVersionRequest, ActivateVersionResponse, DeleteTemplateRequest, DeleteTemplateResponse, GetSettingsRequest, GetSettingsResponse, GetTemplateRequest, GetTemplateResponse, ListTemplatesRequest, ListTemplatesResponse, PreviewRequest, PreviewResponse, SaveTemplateRequest, SaveTemplateResponse } from "./admin_pb";
 export interface CallOptions {
     /** Request metadata sent as headers on the opening frame. */
     headers?: Record<string, string>;
@@ -27,7 +27,13 @@ export declare class AdminServiceClient {
     private readonly transport;
     constructor(transport: WsTransport);
     /**
-     * Every template with its active version's part names.
+     * The installation's languages, for the editor.
+     *
+     * @generated from rpc templates.console.v1.AdminService.GetSettings
+     */
+    getSettings(req: GetSettingsRequest, options?: CallOptions): Promise<GetSettingsResponse>;
+    /**
+     * Every template with its active version's parts and languages.
      *
      * @generated from rpc templates.console.v1.AdminService.ListTemplates
      */
@@ -40,10 +46,10 @@ export declare class AdminServiceClient {
      */
     getTemplate(req: GetTemplateRequest, options?: CallOptions): Promise<GetTemplateResponse>;
     /**
-     * Stores a new version (creating the template on first save). A part
-     * that does not parse refuses the save; the sample not rendering is a
-     * problem reported, the version still saved. The first version is
-     * activated; later ones when asked.
+     * Stores a new version with every language (creating the template on
+     * first save). A source that does not compile refuses the save; the
+     * sample not rendering is a problem reported, the version still saved.
+     * The first version is activated; later ones when asked.
      *
      * @generated from rpc templates.console.v1.AdminService.SaveTemplate
      */
@@ -62,8 +68,8 @@ export declare class AdminServiceClient {
      */
     deleteTemplate(req: DeleteTemplateRequest, options?: CallOptions): Promise<DeleteTemplateResponse>;
     /**
-     * Renders parts with data on the server, with the installation's
-     * current shared pieces; nothing is stored.
+     * Renders one language of a draft with data on the server, with the
+     * installation's active shared pieces; nothing is stored.
      *
      * @generated from rpc templates.console.v1.AdminService.Preview
      */

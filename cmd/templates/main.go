@@ -30,9 +30,11 @@ import (
 type Config struct {
 	config.Backplane `json:"backplane"`
 
-	// DefaultLocale: the variant a render falls back to (name@locale); live.
-	DefaultLocale config.Live[string] `json:"default_locale" schemapb:"default=en;description=Fallback locale of renders"`
-	Store         postgres.Config     `json:"store"`
+	// Languages the editor offers, in order; live.
+	Languages config.Live[[]string] `json:"languages" schemapb:"description=Languages the editor offers, BCP 47"`
+	// DefaultLanguage: renders fall back to it after the template's own; live.
+	DefaultLanguage config.Live[string] `json:"default_language" schemapb:"default=en;description=Fallback language"`
+	Store           postgres.Config     `json:"store"`
 }
 
 // probeTimeout bounds the store's readiness ping.
@@ -50,7 +52,9 @@ func newState(root backplane.Root[Config]) (*State, error) {
 
 	st := &State{Store: deps.NewDependency(root, store.New(cfg.Store), deps.ProbeTimeout(probeTimeout))}
 
-	t, err := templates.New(root, st.Store, templates.Settings{DefaultLocale: cfg.DefaultLocale})
+	set := templates.Settings{Languages: cfg.Languages, DefaultLanguage: cfg.DefaultLanguage}
+
+	t, err := templates.New(root, st.Store, set)
 	if err != nil {
 		return nil, fmt.Errorf("templates: %w", err)
 	}
