@@ -60,4 +60,23 @@ func TestRender(t *testing.T) {
 			t.Fatalf("accepted %v", bad)
 		}
 	}
+
+	// A template cannot exhaust the process: output and time are bounded.
+	big, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range 100000000}}xxxxxxxxxxxxxxxx{{end}}"}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := big.Render(map[string]any{}); err == nil || !strings.Contains(err.Error(), "1 MiB") {
+		t.Fatalf("output bound: %v", err)
+	}
+
+	slow, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range 100000000000}}{{end}}"}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := slow.Render(map[string]any{}); !errors.Is(err, engine.ErrTooSlow) {
+		t.Fatalf("time bound: %v", err)
+	}
 }

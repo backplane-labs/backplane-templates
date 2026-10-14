@@ -180,23 +180,7 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 		return cached{}, fmt.Errorf("templates: active versions: %w", err)
 	}
 
-	var (
-		key     strings.Builder
-		version int64
-		found   bool
-	)
-
-	for _, a := range active {
-		if a.Name == name {
-			found = true
-
-			if a.ActiveVersion != nil {
-				version = *a.ActiveVersion
-			}
-		}
-
-		fmt.Fprintf(&key, "%s=%v;", a.Name, a.ActiveVersion)
-	}
+	key, version, found := cacheKey(active, name)
 
 	if !found {
 		return cached{}, ErrNotFound
@@ -210,7 +194,7 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 	entry, ok := t.cache[name]
 	t.mu.Unlock()
 
-	if ok && entry.key == key.String() {
+	if ok && entry.key == key {
 		return entry, nil
 	}
 
@@ -238,13 +222,38 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 		return cached{}, activity.NonRetryable(fmt.Errorf("templates: %s: %w", name, err)) //nolint:wrapcheck // final
 	}
 
-	entry = cached{key: key.String(), version: row.Version, compiled: c}
+	entry = cached{key: key, version: row.Version, compiled: c}
 
 	t.mu.Lock()
 	t.cache[name] = entry
 	t.mu.Unlock()
 
 	return entry, nil
+}
+
+// cacheKey is the active version of the template and of every shared
+// piece, as one string: a compiled entry is valid while it is unchanged.
+func cacheKey(active []db.ActiveVersionsRow, name string) (string, int64, bool) {
+	var (
+		key     strings.Builder
+		version int64
+		found   bool
+	)
+
+	for _, a := range active {
+		v := int64(0)
+		if a.ActiveVersion != nil {
+			v = *a.ActiveVersion
+		}
+
+		if a.Name == name {
+			found, version = true, v
+		}
+
+		fmt.Fprintf(&key, "%q=%d;", a.Name, v)
+	}
+
+	return key.String(), version, found
 }
 
 // Partials are the active shared pieces (templates named "_x").
@@ -277,5 +286,3 @@ func DecodeParts(raw []byte) ([]engine.Part, error) {
 
 	return parts, nil
 }
-
-var _ = db.Queries{}

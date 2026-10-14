@@ -25,9 +25,12 @@ const (
 
 // Limits of what the engine accepts.
 const (
-	MaxPartBytes = 256 << 10
-	MaxParts     = 16
-	MaxDataBytes = 1 << 20
+	MaxPartBytes   = 256 << 10
+	MaxParts       = 16
+	MaxDataBytes   = 1 << 20
+	MaxOutputBytes = 1 << 20
+	// RenderTimeout bounds one render of every part.
+	RenderTimeout = 2 * time.Second
 )
 
 // Errors of Compile and Render; every one is final.
@@ -41,7 +44,20 @@ var (
 	ErrRender      = errors.New("template: render")
 	ErrDataTooBig  = errors.New("template: data exceeds 1 MiB")
 	ErrPartialKind = errors.New("template: a shared piece needs a part of the same name")
+	ErrTooLong     = errors.New("output exceeds 1 MiB")
+	ErrTooSlow     = errors.New("template: render exceeded 2s")
 )
+
+// limited is a buffer that refuses to grow past MaxOutputBytes.
+type limited struct{ bytes.Buffer }
+
+func (l *limited) Write(p []byte) (int, error) {
+	if l.Len()+len(p) > MaxOutputBytes {
+		return 0, ErrTooLong
+	}
+
+	return l.Buffer.Write(p) //nolint:wrapcheck // a buffer does not fail
+}
 
 // Part is one output of a template: its name, how it is escaped and its
 // source.
@@ -219,14 +235,40 @@ func compileHTML(p Part, partials []Partial) (*htmltemplate.Template, error) {
 }
 
 // Render executes every part with data; a failing part is a ProblemError.
+// A part's output is bounded by MaxOutputBytes and the whole render by
+// RenderTimeout: a template cannot exhaust the process with its loops.
 func (c *Compiled) Render(data map[string]any) (map[string]string, error) {
+	type result struct {
+		out map[string]string
+		err error
+	}
+
+	done := make(chan result, 1)
+
+	go func() {
+		out, err := c.render(data)
+		done <- result{out, err}
+	}()
+
+	timer := time.NewTimer(RenderTimeout)
+	defer timer.Stop()
+
+	select {
+	case r := <-done:
+		return r.out, r.err
+	case <-timer.C:
+		return nil, ErrTooSlow
+	}
+}
+
+func (c *Compiled) render(data map[string]any) (map[string]string, error) {
 	out := make(map[string]string, len(c.parts))
 
 	var problems []error
 
 	for _, p := range c.parts {
 		var (
-			buf bytes.Buffer
+			buf limited
 			err error
 		)
 
@@ -252,7 +294,7 @@ func (c *Compiled) Render(data map[string]any) (map[string]string, error) {
 	return out, nil
 }
 
-// ProblemErrors lists the ProblemErrors an error carries (parse or render), in
+// Problems lists the problems an error carries (parse or render), in
 // part order.
 func Problems(err error) []ProblemError {
 	var out []ProblemError

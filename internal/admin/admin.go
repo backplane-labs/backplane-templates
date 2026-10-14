@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/backplane-labs/backplane/pkg/backplane"
 	"github.com/backplane-labs/backplane/pkg/backplane/deps"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,6 +92,10 @@ func (a *Admin) ListTemplates(
 func (a *Admin) GetTemplate(
 	ctx context.Context, req *templatesconsolev1.GetTemplateRequest,
 ) (*templatesconsolev1.GetTemplateResponse, error) {
+	if err := checkName(req.GetName()); err != nil {
+		return nil, err
+	}
+
 	st, err := a.ready()
 	if err != nil {
 		return nil, err
@@ -236,11 +240,20 @@ func (a *Admin) SaveTemplate(
 	return out, nil
 }
 
+// checkName refuses a name that is not a template name.
+func checkName(name string) error {
+	if !namePattern.MatchString(name) {
+		return status.Errorf(codes.InvalidArgument, "%s",
+			"name must be dotted lower-case words, optionally @locale; a shared piece starts with _")
+	}
+
+	return nil
+}
+
 // checkSave validates a save's name, description and sample.
 func checkSave(req *templatesconsolev1.SaveTemplateRequest) ([]engine.Part, map[string]any, error) {
-	if !namePattern.MatchString(req.GetName()) {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "%s",
-			"name must be dotted lower-case words, optionally @locale; a shared piece starts with _")
+	if err := checkName(req.GetName()); err != nil {
+		return nil, nil, err
 	}
 
 	if len(req.GetDescription()) > maxDescription {
@@ -259,6 +272,10 @@ func checkSave(req *templatesconsolev1.SaveTemplateRequest) ([]engine.Part, map[
 func (a *Admin) ActivateVersion(
 	ctx context.Context, req *templatesconsolev1.ActivateVersionRequest,
 ) (*templatesconsolev1.ActivateVersionResponse, error) {
+	if err := checkName(req.GetName()); err != nil {
+		return nil, err
+	}
+
 	st, err := a.ready()
 	if err != nil {
 		return nil, err
@@ -282,6 +299,10 @@ func (a *Admin) ActivateVersion(
 func (a *Admin) DeleteTemplate(
 	ctx context.Context, req *templatesconsolev1.DeleteTemplateRequest,
 ) (*templatesconsolev1.DeleteTemplateResponse, error) {
+	if err := checkName(req.GetName()); err != nil {
+		return nil, err
+	}
+
 	st, err := a.ready()
 	if err != nil {
 		return nil, err
@@ -434,12 +455,14 @@ func (a *Admin) failed(what string, err error) error {
 	return status.Errorf(codes.Internal, "%s failed; see the service log", what)
 }
 
-// audit records an operator action: actor console.
+// audit records an operator action: actor console (the relay carries the
+// operator's session, not an identity the service can name), one record
+// per change (AuditID), the template name already validated.
 func (a *Admin) audit(ctx context.Context, name, template string, fields ...xlog.Field) {
 	fields = append([]xlog.Field{
-		backplane.Audit(), xlog.String("event.name", name), xlog.String(backplane.AuditSubject, "template/"+template),
-		xlog.String(backplane.AuditActor, "console"), xlog.String(backplane.AuditOutcome, "succeeded"),
-		xlog.String("template", template), xlog.Time("at", time.Now()),
+		backplane.Audit(), xlog.String("event.name", name), xlog.String(backplane.AuditID, uuid.NewString()),
+		xlog.String(backplane.AuditSubject, "template/"+template), xlog.String(backplane.AuditActor, "console"),
+		xlog.String(backplane.AuditOutcome, "succeeded"), xlog.String("template", template),
 	}, fields...)
 
 	a.Log().Ctx().Info(ctx, name, fields...)
