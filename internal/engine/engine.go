@@ -242,6 +242,12 @@ func build[T set[T]](root T, p Part, partials []Partial, tree func(T) *parse.Tre
 		}
 	}
 
+	for _, t := range root.Templates() {
+		if tr := tree(t); tr != nil {
+			floatLiterals(tr.Root)
+		}
+	}
+
 	defined := len(root.Templates())
 	lookup := func(name string) *treeOf {
 		if t := root.Lookup(name); t != zero && tree(t) != nil {

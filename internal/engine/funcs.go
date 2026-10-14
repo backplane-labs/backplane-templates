@@ -39,9 +39,12 @@ func funcs(tag language.Tag) map[string]any {
 		"add":       func(a, b float64) float64 { return a + b },
 		"mul":       func(a, b float64) float64 { return a * b },
 		"round":     round,
+		"len":       lenOf,
+		"index":     indexOf,
+		"slice":     sliceOf,
 		"date":      date,
 		"plural":    func(n any, forms ...string) (string, error) { return pluralOf(tag, n, forms) },
-		"number":    func(n any, digits ...int) (string, error) { return number(printer, n, digits) },
+		"number":    func(n any, digits ...any) (string, error) { return number(printer, n, digits) },
 		"longdate":  func(v any) (string, error) { return longdate(names, v) },
 		"monthname": func(v any) (string, error) { return field(v, names.month) },
 		"weekday":   func(v any) (string, error) { return field(v, names.weekday) },
@@ -56,9 +59,19 @@ var (
 
 const maxDigits = 12
 
-func round(v float64, digits int) (string, error) {
-	if digits < 0 || digits > maxDigits {
-		return "", fmt.Errorf("round: %w", errDigits)
+func digitsOf(d any) (int, error) {
+	n, err := intOf(d)
+	if err != nil || n < 0 || n > maxDigits {
+		return 0, errDigits
+	}
+
+	return n, nil
+}
+
+func round(v float64, d any) (string, error) {
+	digits, err := digitsOf(d)
+	if err != nil {
+		return "", fmt.Errorf("round: %w", err)
 	}
 
 	return strconv.FormatFloat(v, 'f', digits, 64), nil
@@ -240,18 +253,19 @@ func cardinal(tag language.Tag, v float64) plural.Form {
 
 // number formats n with the language's grouping and decimal mark;
 // digits defaults to the number's own (at most 6).
-func number(printer *message.Printer, n any, digits []int) (string, error) {
+func number(printer *message.Printer, n any, digits []any) (string, error) {
 	v, err := toFloat(n)
 	if err != nil {
 		return "", fmt.Errorf("number: %w", err)
 	}
 
 	if len(digits) > 0 {
-		if digits[0] < 0 || digits[0] > maxDigits {
-			return "", fmt.Errorf("number: %w", errDigits)
+		d, err := digitsOf(digits[0])
+		if err != nil {
+			return "", fmt.Errorf("number: %w", err)
 		}
 
-		return printer.Sprintf("%.*f", digits[0], v), nil
+		return printer.Sprintf("%.*f", d, v), nil
 	}
 
 	if v == math.Trunc(v) && math.Abs(v) < 1e15 {

@@ -132,9 +132,10 @@ func TestSafety(t *testing.T) {
 	}
 
 	loop := engine.Partial{Name: "_loop", Parts: []engine.Part{{Name: "a", Kind: "text", Source: "{{range .c}}{{end}}"}}}
+	dot := engine.Partial{Name: "_dot", Parts: []engine.Part{{Name: "a", Kind: "text", Source: "{{range .}}{{end}}"}}}
 
 	for src, want := range refused {
-		_, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: src}}, []engine.Partial{loop}, "en")
+		_, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: src}}, []engine.Partial{loop, dot}, "en")
 		if !errors.Is(err, engine.ErrParse) || !strings.Contains(err.Error(), want.Error()) {
 			t.Fatalf("%s: %v", src, err)
 		}
@@ -153,6 +154,28 @@ func TestSafety(t *testing.T) {
 	ok := `{{$xs := .items}}{{range $i, $e := $xs}}{{$i}}{{range $e.tags}}{{.}}{{end}}{{end}}{{with .order}}{{range .lines}}{{.}}{{end}}{{end}}`
 	if got := render(t, "en", ok, map[string]any{"items": []any{map[string]any{"tags": []any{"x"}}}, "order": map[string]any{"lines": []any{"l"}}}); got != "0xl" {
 		t.Fatalf("allowed: %q", got)
+	}
+
+	// No integer exists at render: a literal is a float, and range refuses
+	// one even where the checks above would not see it.
+	for _, src := range []string{"{{$n := 3}}{{printf \"%T\" $n}}", "{{printf \"%T\" (len .items)}}"} {
+		if got := render(t, "en", src, map[string]any{"items": []any{1.0}}); got != "float64" {
+			t.Fatalf("%s: %q", src, got)
+		}
+	}
+
+	ints := `{{index .items 1}}|{{len .items}}|{{if gt (len .items) 1}}many{{end}}|{{slice .items 1 2}}|{{round 1.234 2}}|{{number 1234.5 1}}|{{index .m "k"}}`
+	if got := render(t, "en", ints, map[string]any{"items": []any{"a", "b", "c"}, "m": map[string]any{"k": "v"}}); got != "b|3|many|[b]|1.23|1,234.5|v" {
+		t.Fatalf("builtins on floats: %q", got)
+	}
+
+	html, err := engine.Compile([]engine.Part{{Name: "h", Kind: engine.KindHTML, Source: `<b>{{index .items 0}}</b>{{if gt (len .items) 0}}!{{end}}`}}, nil, "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := html.Render(map[string]any{"items": []any{"<x>"}}); err != nil || out["h"] != "<b>&lt;x&gt;</b>!" {
+		t.Fatalf("html on floats: %q %v", out, err)
 	}
 
 	// Helpers refuse to build what would exceed the output limit.

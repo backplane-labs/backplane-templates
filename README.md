@@ -45,13 +45,16 @@ edit is safe until it is activated, and a rollback is activating an older one.
 
 ### What a template cannot do
 
-A Go template cannot be interrupted, so the engine refuses up front what could
-run without bound: `range` iterates only over data (a field or a variable
-holding one), never a number; ranges nest at most two deep, counted through
-shared pieces; templates define no templates of their own and shared pieces
-include each other without cycles. Data holds at most 10000 elements, a part
-renders at most 1 MiB, a render takes at most 2 s, and the renders running at
-once are bounded.
+A Go template cannot be interrupted, so the engine makes an unbounded loop
+impossible to write. A template holds no integers: number literals compile to
+floats, `len`, `index` and `slice` work on floats, data numbers are floats,
+and `range` refuses a float, so a template loops only over data. On top of
+that, `range` iterates only over a field or a variable holding data, ranges
+nest at most two deep (counted through shared pieces), templates define no
+templates of their own and shared pieces include each other without cycles.
+Data holds at most 10000 elements, a part renders at most 1 MiB (`replace`
+and `join` refuse to build more), a render takes at most 2 s, and the
+renders running at once are bounded.
 
 ## Configuration
 

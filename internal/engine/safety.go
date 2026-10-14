@@ -129,7 +129,10 @@ func (c checker) node(node parse.Node, depth int, vars map[string]bool) error {
 	case *parse.RangeNode:
 		return c.rangeNode(n, depth, vars)
 	case *parse.IfNode:
-		return errors.Join(c.list(n.List, depth, scope(vars)), c.list(n.ElseList, depth, scope(vars)))
+		inner := scope(vars)
+		c.declare(n.Pipe, inner, c.isData(n.Pipe, vars))
+
+		return errors.Join(c.list(n.List, depth, inner), c.list(n.ElseList, depth, scope(vars)))
 	case *parse.WithNode:
 		inner := scope(vars)
 		data := c.isData(n.Pipe, vars)
@@ -138,7 +141,7 @@ func (c checker) node(node parse.Node, depth int, vars map[string]bool) error {
 
 		return errors.Join(c.list(n.List, depth, inner), c.list(n.ElseList, depth, scope(vars)))
 	case *parse.TemplateNode:
-		return c.include(n.Name, depth)
+		return c.include(n.Name, depth, n.Pipe == nil || c.isData(n.Pipe, vars))
 	}
 
 	return nil
@@ -167,7 +170,7 @@ func (c checker) rangeNode(n *parse.RangeNode, depth int, vars map[string]bool) 
 
 // include follows {{template "name"}} into a shared piece with the
 // current depth: a range around an include counts inside it.
-func (c checker) include(name string, depth int) error {
+func (c checker) include(name string, depth int, data bool) error {
 	if c.visiting[name] {
 		return fmt.Errorf("%w: %s", ErrCycle, name)
 	}
@@ -180,7 +183,8 @@ func (c checker) include(name string, depth int) error {
 	c.visiting[name] = true
 	defer delete(c.visiting, name)
 
-	return c.list(tree.root, depth, map[string]bool{"$": true, ".": true})
+	// Dot and $ in the piece are the include's argument.
+	return c.list(tree.root, depth, map[string]bool{"$": data, ".": data})
 }
 
 // isData: the pipeline is one command of one field or data variable.
