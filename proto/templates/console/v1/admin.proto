@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package templates.console.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/backplane-labs/backplane-templates/proto/templates/console/v1;templatesconsolev1";
+
+// AdminService is templates' internal API: the console module's editor,
+// relayed by backplane behind the operator's session. Products never
+// call it; they render through the templates.Render activity.
+service AdminService {
+  // Every template with its active version's part names.
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse);
+  // One template: its versions and the content of one of them (the
+  // active one unless a version is asked for).
+  rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+  // Stores a new version (creating the template on first save). A part
+  // that does not parse refuses the save; the sample not rendering is a
+  // problem reported, the version still saved. The first version is
+  // activated; later ones when asked.
+  rpc SaveTemplate(SaveTemplateRequest) returns (SaveTemplateResponse);
+  // Makes a version the one Render uses (a rollback is activating an
+  // older one).
+  rpc ActivateVersion(ActivateVersionRequest) returns (ActivateVersionResponse);
+  // Removes a template with every version.
+  rpc DeleteTemplate(DeleteTemplateRequest) returns (DeleteTemplateResponse);
+  // Renders parts with data on the server, with the installation's
+  // current shared pieces; nothing is stored.
+  rpc Preview(PreviewRequest) returns (PreviewResponse);
+}
+
+// Part is one output of a template.
+message Part {
+  // [a-z][a-z0-9_]*: subject, text, html, title, body...
+  string name = 1;
+  // text or html (contextual escaping).
+  string kind = 2;
+  string source = 3;
+}
+
+// Problem is what a part is wrong about.
+message Problem {
+  string part = 1;
+  string message = 2;
+}
+
+message ListTemplatesRequest {}
+
+message ListTemplatesResponse {
+  repeated TemplateSummary templates = 1;
+}
+
+message TemplateSummary {
+  string name = 1;
+  string description = 2;
+  // 0: no version activated yet.
+  int64 active_version = 3;
+  int64 versions = 4;
+  repeated string parts = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message GetTemplateRequest {
+  string name = 1;
+  // The version to return the content of; 0: the active one.
+  int64 version = 2;
+}
+
+message GetTemplateResponse {
+  string name = 1;
+  string description = 2;
+  int64 active_version = 3;
+  repeated VersionSummary versions = 4;
+  // The requested version's content.
+  Version content = 5;
+}
+
+message VersionSummary {
+  int64 version = 1;
+  string author = 2;
+  string comment = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message Version {
+  int64 version = 1;
+  repeated Part parts = 2;
+  // The sample data (JSON object) the editor previews with.
+  string sample = 3;
+  string author = 4;
+  string comment = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message SaveTemplateRequest {
+  string name = 1;
+  string description = 2;
+  repeated Part parts = 3;
+  // JSON object.
+  string sample = 4;
+  string comment = 5;
+  // Activate the new version at once.
+  bool activate = 6;
+}
+
+message SaveTemplateResponse {
+  int64 version = 1;
+  bool activated = 2;
+  // The sample not rendering, by part.
+  repeated Problem problems = 3;
+}
+
+message ActivateVersionRequest {
+  string name = 1;
+  int64 version = 2;
+}
+
+message ActivateVersionResponse {}
+
+message DeleteTemplateRequest {
+  string name = 1;
+}
+
+message DeleteTemplateResponse {
+  bool deleted = 1;
+}
+
+message PreviewRequest {
+  repeated Part parts = 1;
+  // JSON object.
+  string data = 2;
+}
+
+message PreviewResponse {
+  // Rendered parts by name; a part with a problem is absent.
+  map<string, string> parts = 1;
+  repeated Problem problems = 2;
+}

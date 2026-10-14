@@ -1,0 +1,4 @@
+# Development configuration (make run): the platform-in-a-box PostgreSQL.
+default_locale: en
+store:
+  dsn: postgres://backplane:backplane@localhost:5433/backplane?sslmode=disable

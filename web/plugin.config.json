@@ -1,0 +1,6 @@
+{
+  "service": "templates",
+  "nav": [
+    { "path": "", "labelKey": "templates" }
+  ]
+}

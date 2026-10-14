@@ -1,0 +1,21 @@
+# sqld: the service's own PostgreSQL schema, migrations and typed queries
+# (internal/store). pg-outbox brings its own migrations; they share the
+# `templates` schema at start.
+version: "1"
+engine: postgresql
+options:
+  defaultSchema: templates
+schema:
+  - file: internal/store/schema.sql
+queries:
+  - dir: internal/store/queries
+migrations:
+  - dir: internal/store/migrations
+plugins:
+  - name: go
+    binary: ./bin/sqld-gen-go
+    out: internal/store/db
+    options:
+      package: db
+      overrides:
+        uuid: github.com/google/uuid.UUID

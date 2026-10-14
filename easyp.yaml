@@ -1,0 +1,28 @@
+# Proto lint/generate for smtp's internal console API. Run through `make gen`
+# / `make lint-proto`: Go plugins are pinned in ./bin, the TypeScript ones
+# come from web/node_modules (make configure-web).
+lint:
+  use:
+    - DEFAULT
+  service_suffix: Service
+  allow_comment_ignores: false
+  except:
+    - PACKAGE_DIRECTORY_MATCH
+generate:
+  inputs:
+    - directory: proto
+  plugins:
+    - name: go
+      out: .
+      opts:
+        paths: source_relative
+    - name: go-grpc
+      out: .
+      opts:
+        paths: source_relative
+    - name: es
+      out: web/src/gen
+      opts:
+        target: ts
+    - name: ws-es
+      out: web/src/gen
