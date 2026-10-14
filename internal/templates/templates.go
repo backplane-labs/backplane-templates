@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -180,7 +181,7 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 		return cached{}, fmt.Errorf("templates: active versions: %w", err)
 	}
 
-	key, version, found := cacheKey(active, name)
+	key, version, found := cacheKey(sortedByName(active), name)
 
 	if !found {
 		return cached{}, ErrNotFound
@@ -207,7 +208,7 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 		return cached{}, fmt.Errorf("templates: load %s: %w", name, err)
 	}
 
-	partials, err := Partials(ctx, st)
+	partials, loaded, err := activePartials(ctx, st)
 	if err != nil {
 		return cached{}, err
 	}
@@ -221,6 +222,12 @@ func (t *Templates) compiled(ctx context.Context, name string) (cached, error) {
 	if err != nil {
 		return cached{}, activity.NonRetryable(fmt.Errorf("templates: %s: %w", name, err)) //nolint:wrapcheck // final
 	}
+
+	// The entry is keyed by what was loaded, not by what was asked: an
+	// activation between the reads gives a key that differs from the next
+	// lookup's, so the entry is rebuilt instead of serving a mix.
+	loaded = append(loaded, db.ActiveVersionsRow{Name: name, ActiveVersion: &row.Version})
+	key, _, _ = cacheKey(sortedByName(loaded), name)
 
 	entry = cached{key: key, version: row.Version, compiled: c}
 
@@ -248,6 +255,8 @@ func cacheKey(active []db.ActiveVersionsRow, name string) (string, int64, bool) 
 
 		if a.Name == name {
 			found, version = true, v
+		} else if v == 0 {
+			continue // a shared piece not activated is not part of any render
 		}
 
 		fmt.Fprintf(&key, "%q=%d;", a.Name, v)
@@ -258,23 +267,39 @@ func cacheKey(active []db.ActiveVersionsRow, name string) (string, int64, bool) 
 
 // Partials are the active shared pieces (templates named "_x").
 func Partials(ctx context.Context, st *store.Store) ([]engine.Partial, error) {
+	out, _, err := activePartials(ctx, st)
+
+	return out, err
+}
+
+// activePartials are the shared pieces with the versions they were read at.
+func activePartials(ctx context.Context, st *store.Store) ([]engine.Partial, []db.ActiveVersionsRow, error) {
 	rows, err := st.Q.ListActivePartials(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("templates: partials: %w", err)
+		return nil, nil, fmt.Errorf("templates: partials: %w", err)
 	}
 
 	out := make([]engine.Partial, 0, len(rows))
+	versions := make([]db.ActiveVersionsRow, 0, len(rows)+1)
 
 	for _, r := range rows {
 		var parts []engine.Part
 		if err := json.Unmarshal(r.Parts, &parts); err != nil {
-			return nil, fmt.Errorf("templates: partial %s: %w", r.Name, err)
+			return nil, nil, fmt.Errorf("templates: partial %s: %w", r.Name, err)
 		}
 
 		out = append(out, engine.Partial{Name: r.Name, Parts: parts})
+		versions = append(versions, db.ActiveVersionsRow{Name: r.Name, ActiveVersion: &r.Version})
 	}
 
-	return out, nil
+	return out, versions, nil
+}
+
+// sortedByName orders rows as the store lists them, so keys compare.
+func sortedByName(rows []db.ActiveVersionsRow) []db.ActiveVersionsRow {
+	slices.SortFunc(rows, func(a, b db.ActiveVersionsRow) int { return strings.Compare(a.Name, b.Name) })
+
+	return rows
 }
 
 // DecodeParts reads a version's parts.

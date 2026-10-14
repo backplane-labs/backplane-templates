@@ -224,3 +224,63 @@ func TestTemplates(t *testing.T) {
 		t.Fatalf("deleted: %v", err)
 	}
 }
+
+// The compiled cache follows activation of the template and of a shared
+// piece, and ignores a shared piece that was never activated.
+func TestCacheFollowsActivation(t *testing.T) {
+	t.Parallel()
+
+	f := start(t)
+	ctx := t.Context()
+
+	save := func(name, text string, activate bool) {
+		t.Helper()
+
+		_, err := f.admin.SaveTemplate(ctx, &templatesconsolev1.SaveTemplateRequest{
+			Name: name, Parts: []*templatesconsolev1.Part{{Name: "text", Kind: "text", Source: text}}, Activate: activate,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	save("_sig", "v1", true)
+	save("_draft", "never", true)
+	save("_draft", "x", false) // _draft v2 inactive; v1 stays
+	save("note", `{{template "_sig" .}}`, true)
+
+	text := func() string {
+		t.Helper()
+
+		out, err := f.render(t, templates.RenderIn{Template: "note"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return out.Parts["text"]
+	}
+
+	if got := text(); got != "v1" {
+		t.Fatalf("first: %q", got)
+	}
+
+	save("_sig", "v2", true)
+
+	if got := text(); got != "v2" {
+		t.Fatalf("after partial activation: %q", got)
+	}
+
+	save("note", `[{{template "_sig" .}}]`, false)
+
+	if got := text(); got != "v2" {
+		t.Fatalf("inactive template version used: %q", got)
+	}
+
+	if _, err := f.admin.ActivateVersion(ctx, &templatesconsolev1.ActivateVersionRequest{Name: "note", Version: 2}); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := text(); got != "[v2]" {
+		t.Fatalf("after template activation: %q", got)
+	}
+}

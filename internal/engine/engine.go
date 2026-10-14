@@ -11,9 +11,11 @@ import (
 	"errors"
 	"fmt"
 	htmltemplate "html/template"
+	"runtime"
 	"sort"
 	"strings"
 	texttemplate "text/template"
+	"text/template/parse"
 	"time"
 )
 
@@ -46,6 +48,25 @@ var (
 	ErrPartialKind = errors.New("template: a shared piece needs a part of the same name")
 	ErrTooLong     = errors.New("output exceeds 1 MiB")
 	ErrTooSlow     = errors.New("template: render exceeded 2s")
+	// ErrBusy: renders that ran past their time still hold every slot;
+	// retrying later can succeed.
+	ErrBusy = errors.New("template: too many renders running")
+	// ErrRangeLiteral: {{range N}} over a number literal is a loop the
+	// data does not bound.
+	ErrRangeLiteral = errors.New("range over a number literal is not allowed")
+)
+
+// slots bounds renders running at once, including those abandoned at
+// RenderTimeout (a Go template cannot be stopped): a runaway template
+// costs at most these goroutines, never an unbounded pile of them.
+//
+//nolint:gochecknoglobals // one bound for the process
+var slots = make(chan struct{}, max(minSlots, slotsPerCPU*runtime.GOMAXPROCS(0)))
+
+// minSlots keeps a small machine able to render a few templates at once.
+const (
+	minSlots    = 4
+	slotsPerCPU = 2
 )
 
 // limited is a buffer that refuses to grow past MaxOutputBytes.
@@ -210,6 +231,12 @@ func compileText(p Part, partials []Partial) (*texttemplate.Template, error) {
 		return nil, err //nolint:wrapcheck // the parser names the part
 	}
 
+	for _, tpl := range t.Templates() {
+		if err := checkRanges(tpl.Tree); err != nil {
+			return nil, fmt.Errorf("%s: %w", tpl.Name(), err)
+		}
+	}
+
 	return t, nil
 }
 
@@ -231,7 +258,55 @@ func compileHTML(p Part, partials []Partial) (*htmltemplate.Template, error) {
 		return nil, err //nolint:wrapcheck // the parser names the part
 	}
 
+	for _, tpl := range t.Templates() {
+		if err := checkRanges(tpl.Tree); err != nil {
+			return nil, fmt.Errorf("%s: %w", tpl.Name(), err)
+		}
+	}
+
 	return t, nil
+}
+
+// checkRanges refuses {{range N}} over a number literal anywhere in tree:
+// JSON data decodes numbers as float64, which range refuses, so a literal
+// is the one way to loop without the data bounding it.
+func checkRanges(tree *parse.Tree) error {
+	if tree == nil || tree.Root == nil {
+		return nil
+	}
+
+	return walkRanges(tree.Root)
+}
+
+func walkRanges(node parse.Node) error {
+	switch n := node.(type) {
+	case *parse.ListNode:
+		if n == nil {
+			return nil
+		}
+
+		for _, child := range n.Nodes {
+			if err := walkRanges(child); err != nil {
+				return err
+			}
+		}
+	case *parse.RangeNode:
+		if pipe := n.Pipe; pipe != nil && len(pipe.Cmds) > 0 {
+			for _, arg := range pipe.Cmds[len(pipe.Cmds)-1].Args {
+				if _, isNumber := arg.(*parse.NumberNode); isNumber {
+					return ErrRangeLiteral
+				}
+			}
+		}
+
+		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
+	case *parse.IfNode:
+		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
+	case *parse.WithNode:
+		return errors.Join(walkRanges(n.List), walkRanges(n.ElseList))
+	}
+
+	return nil
 }
 
 // Render executes every part with data; a failing part is a ProblemError.
@@ -243,9 +318,17 @@ func (c *Compiled) Render(data map[string]any) (map[string]string, error) {
 		err error
 	}
 
+	select {
+	case slots <- struct{}{}:
+	default:
+		return nil, ErrBusy
+	}
+
 	done := make(chan result, 1)
 
 	go func() {
+		defer func() { <-slots }()
+
 		out, err := c.render(data)
 		done <- result{out, err}
 	}()

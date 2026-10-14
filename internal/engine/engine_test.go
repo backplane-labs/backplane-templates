@@ -61,22 +61,32 @@ func TestRender(t *testing.T) {
 		}
 	}
 
-	// A template cannot exhaust the process: output and time are bounded.
-	big, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range 100000000}}xxxxxxxxxxxxxxxx{{end}}"}}, nil)
+	// A template cannot exhaust the process: output is bounded, a range
+	// over a number literal does not compile.
+	big, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range .items}}{{$.pad}}{{end}}"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := big.Render(map[string]any{}); err == nil || !strings.Contains(err.Error(), "1 MiB") {
+	items := make([]any, 200)
+	if _, err := big.Render(map[string]any{"items": items, "pad": strings.Repeat("x", 8192)}); err == nil || !strings.Contains(err.Error(), "1 MiB") {
 		t.Fatalf("output bound: %v", err)
 	}
 
-	slow, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range 100000000000}}{{end}}"}}, nil)
+	for _, src := range []string{"{{range 100000000000}}{{end}}", "{{if .x}}{{range $i := 1000000000}}{{end}}{{end}}"} {
+		if _, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: src}}, nil); !errors.Is(err, engine.ErrParse) ||
+			!strings.Contains(err.Error(), "number literal") {
+			t.Fatalf("range literal %q: %v", src, err)
+		}
+	}
+
+	// JSON numbers are float64: ranging over data cannot loop unbounded.
+	loop, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range .n}}x{{end}}"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := slow.Render(map[string]any{}); !errors.Is(err, engine.ErrTooSlow) {
-		t.Fatalf("time bound: %v", err)
+	if _, err := loop.Render(map[string]any{"n": float64(1e12)}); err == nil {
+		t.Fatal("ranged over a float")
 	}
 }
