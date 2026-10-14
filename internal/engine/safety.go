@@ -40,6 +40,15 @@ type treeOf struct {
 	defined int
 }
 
+type checker struct {
+	lookup   func(string) *treeOf
+	visiting map[string]bool
+	// reassigned are variables some {{$x = ...}} in the set changes: an
+	// assignment can run after a range that reads the variable (the next
+	// iteration of an outer range), so such a variable never counts as data.
+	reassigned map[string]bool
+}
+
 // checkSet checks the part named root with every template of its set
 // (the part and the shared pieces it can include).
 func checkSet(root string, declared int, lookup func(string) *treeOf) error {
@@ -52,14 +61,50 @@ func checkSet(root string, declared int, lookup func(string) *treeOf) error {
 		return ErrDefine
 	}
 
-	c := checker{lookup: lookup, visiting: map[string]bool{root: true}}
+	c := checker{lookup: lookup, visiting: map[string]bool{root: true}, reassigned: map[string]bool{}}
+	c.collect(tree.root, map[string]bool{root: true})
 
-	return c.list(tree.root, 0, map[string]bool{"$": true})
+	return c.list(tree.root, 0, map[string]bool{"$": true, ".": true})
 }
 
-type checker struct {
-	lookup   func(string) *treeOf
-	visiting map[string]bool
+// collect gathers the variables reassigned anywhere in the part and the
+// shared pieces it reaches.
+func (c checker) collect(node parse.Node, seen map[string]bool) {
+	switch n := node.(type) {
+	case *parse.ListNode:
+		if n == nil {
+			return
+		}
+
+		for _, child := range n.Nodes {
+			c.collect(child, seen)
+		}
+	case *parse.ActionNode:
+		if n.Pipe != nil && n.Pipe.IsAssign {
+			for _, v := range n.Pipe.Decl {
+				c.reassigned[v.Ident[0]] = true
+			}
+		}
+	case *parse.RangeNode:
+		c.collect(n.List, seen)
+		c.collect(n.ElseList, seen)
+	case *parse.IfNode:
+		c.collect(n.List, seen)
+		c.collect(n.ElseList, seen)
+	case *parse.WithNode:
+		c.collect(n.List, seen)
+		c.collect(n.ElseList, seen)
+	case *parse.TemplateNode:
+		if seen[n.Name] {
+			return
+		}
+
+		seen[n.Name] = true
+
+		if tree := c.lookup(n.Name); tree != nil {
+			c.collect(tree.root, seen)
+		}
+	}
 }
 
 // list walks nodes; vars says which variables hold data.
@@ -87,7 +132,9 @@ func (c checker) node(node parse.Node, depth int, vars map[string]bool) error {
 		return errors.Join(c.list(n.List, depth, scope(vars)), c.list(n.ElseList, depth, scope(vars)))
 	case *parse.WithNode:
 		inner := scope(vars)
-		c.declare(n.Pipe, inner, c.isData(n.Pipe, vars))
+		data := c.isData(n.Pipe, vars)
+		c.declare(n.Pipe, inner, data)
+		inner["."] = data
 
 		return errors.Join(c.list(n.List, depth, inner), c.list(n.ElseList, depth, scope(vars)))
 	case *parse.TemplateNode:
@@ -108,6 +155,7 @@ func (c checker) rangeNode(n *parse.RangeNode, depth int, vars map[string]bool) 
 
 	inner := scope(vars)
 	c.declare(n.Pipe, inner, true)
+	inner["."] = true
 
 	// {{range $i, $e := ...}}: $i is an index or a key, not data.
 	if len(n.Pipe.Decl) == 2 { //nolint:mnd // index and element
@@ -132,7 +180,7 @@ func (c checker) include(name string, depth int) error {
 	c.visiting[name] = true
 	defer delete(c.visiting, name)
 
-	return c.list(tree.root, depth, map[string]bool{"$": true})
+	return c.list(tree.root, depth, map[string]bool{"$": true, ".": true})
 }
 
 // isData: the pipeline is one command of one field or data variable.
@@ -141,24 +189,22 @@ func (c checker) isData(pipe *parse.PipeNode, vars map[string]bool) bool {
 		return false
 	}
 
-	switch arg := pipe.Cmds[0].Args[0].(type) {
-	case *parse.FieldNode, *parse.DotNode:
-		return true
-	case *parse.VariableNode:
-		return vars[arg.Ident[0]]
-	case *parse.ChainNode:
-		inner, ok := arg.Node.(*parse.VariableNode)
-
-		return ok && vars[inner.Ident[0]] || isField(arg.Node)
-	}
-
-	return false
+	return c.dataNode(pipe.Cmds[0].Args[0], vars)
 }
 
-func isField(node parse.Node) bool {
-	switch node.(type) {
-	case *parse.FieldNode, *parse.DotNode:
-		return true
+// dataNode: a field of data, dot holding data, or a variable holding data
+// that nothing reassigns. A field of a number fails at render, so only
+// the root of a chain needs to be data.
+func (c checker) dataNode(node parse.Node, vars map[string]bool) bool {
+	switch n := node.(type) {
+	case *parse.FieldNode:
+		return vars["."]
+	case *parse.DotNode:
+		return vars["."]
+	case *parse.VariableNode:
+		return vars[n.Ident[0]] && !c.reassigned[n.Ident[0]]
+	case *parse.ChainNode:
+		return c.dataNode(n.Node, vars)
 	}
 
 	return false

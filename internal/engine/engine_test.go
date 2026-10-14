@@ -155,6 +155,23 @@ func TestSafety(t *testing.T) {
 		t.Fatalf("allowed: %q", got)
 	}
 
+	// Helpers refuse to build what would exceed the output limit.
+	for src, data := range map[string]map[string]any{
+		`{{replace .s "" .r}}`:  {"s": strings.Repeat("x", 4096), "r": strings.Repeat("y", 4096)},
+		`{{join .sep .items}}`:  {"sep": strings.Repeat("z", 8192), "items": make([]any, 1000)},
+		`{{round 1.5 100000}}`:  {},
+		`{{number 1.5 100000}}`: {},
+	} {
+		c, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: src}}, nil, "en")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := c.Render(data); err == nil {
+			t.Fatalf("%s rendered", src)
+		}
+	}
+
 	// Output is bounded; data elements are bounded; JSON numbers cannot be ranged over.
 	big, err := engine.Compile([]engine.Part{{Name: "a", Kind: "text", Source: "{{range .items}}{{$.pad}}{{end}}"}}, nil, "en")
 	if err != nil {

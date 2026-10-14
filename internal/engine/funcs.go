@@ -32,13 +32,13 @@ func funcs(tag language.Tag) map[string]any {
 		"lower":     strings.ToLower,
 		"title":     title,
 		"trim":      strings.TrimSpace,
-		"replace":   strings.ReplaceAll,
+		"replace":   replace,
 		"join":      join,
 		"default":   defaultOf,
 		"json":      toJSON,
 		"add":       func(a, b float64) float64 { return a + b },
 		"mul":       func(a, b float64) float64 { return a * b },
-		"round":     func(v float64, digits int) string { return strconv.FormatFloat(v, 'f', digits, 64) },
+		"round":     round,
 		"date":      date,
 		"plural":    func(n any, forms ...string) (string, error) { return pluralOf(tag, n, forms) },
 		"number":    func(n any, digits ...int) (string, error) { return number(printer, n, digits) },
@@ -48,7 +48,32 @@ func funcs(tag language.Tag) map[string]any {
 	}
 }
 
-var errNoForms = errors.New("plural: no forms")
+var (
+	errNoForms = errors.New("plural: no forms")
+	errDigits  = errors.New("digits must be 0 to 12")
+	errLarge   = errors.New("result exceeds 1 MiB")
+)
+
+const maxDigits = 12
+
+func round(v float64, digits int) (string, error) {
+	if digits < 0 || digits > maxDigits {
+		return "", fmt.Errorf("round: %w", errDigits)
+	}
+
+	return strconv.FormatFloat(v, 'f', digits, 64), nil
+}
+
+// replace is strings.ReplaceAll refusing a result past MaxOutputBytes
+// before building it.
+func replace(s, old, replacement string) (string, error) {
+	n := strings.Count(s, old)
+	if size := len(s) + n*(len(replacement)-len(old)); size > MaxOutputBytes {
+		return "", fmt.Errorf("replace: %w", errLarge)
+	}
+
+	return strings.ReplaceAll(s, old, replacement), nil
+}
 
 func title(s string) string {
 	words := strings.Fields(s)
@@ -59,20 +84,32 @@ func title(s string) string {
 	return strings.Join(words, " ")
 }
 
-func join(sep string, items any) string {
+// join joins items with sep, refusing a result past MaxOutputBytes.
+func join(sep string, items any) (string, error) {
+	var parts []string
+
 	switch v := items.(type) {
 	case []string:
-		return strings.Join(v, sep)
+		parts = v
 	case []any:
-		parts := make([]string, len(v))
+		parts = make([]string, len(v))
 		for i, item := range v {
 			parts[i] = fmt.Sprint(item)
 		}
-
-		return strings.Join(parts, sep)
 	default:
-		return fmt.Sprint(items)
+		return fmt.Sprint(items), nil
 	}
+
+	size := len(sep) * max(len(parts)-1, 0)
+	for _, p := range parts {
+		size += len(p)
+	}
+
+	if size > MaxOutputBytes {
+		return "", fmt.Errorf("join: %w", errLarge)
+	}
+
+	return strings.Join(parts, sep), nil
 }
 
 func defaultOf(fallback, value any) any {
@@ -210,6 +247,10 @@ func number(printer *message.Printer, n any, digits []int) (string, error) {
 	}
 
 	if len(digits) > 0 {
+		if digits[0] < 0 || digits[0] > maxDigits {
+			return "", fmt.Errorf("number: %w", errDigits)
+		}
+
 		return printer.Sprintf("%.*f", digits[0], v), nil
 	}
 
