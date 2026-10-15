@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { create } from '@bufbuild/protobuf';
@@ -32,6 +32,25 @@ const route = (name: string) => `edit/${encodeURIComponent(name)}`;
 /** JSON text in one canonical form, for comparing drafts; invalid text as is. */
 function canonical(text: string) { try { return JSON.stringify(JSON.parse(text || '{}')); } catch { return text; } }
 /** The canonical BCP 47 form of a tag, or undefined. */
+/** HtmlPreview shows an html part the way a mail client does: as tall as the message, at a desktop's or a phone's width. */
+function HtmlPreview({ title, html }: { title: string; html: string }) {
+  const t = useText(), frame = useRef<HTMLIFrameElement>(null);
+  const [phone, setPhone] = useState(false), [height, setHeight] = useState(240);
+  // allow-same-origin without allow-scripts: the message runs no code, and the console can read its height.
+  const fit = () => { const doc = frame.current?.contentDocument; if (doc?.documentElement) setHeight(Math.min(4000, doc.documentElement.scrollHeight + 2)); };
+  useEffect(() => { const id = requestAnimationFrame(fit); return () => cancelAnimationFrame(id); }, [phone, html]); // eslint-disable-line react-hooks/exhaustive-deps
+  return <Stack gap={6}>
+    <div role="group" aria-label={t('previewWidth')} style={{ display: 'flex', gap: 4 }}>
+      <Button size="sm" variant={phone ? 'ghost' : 'outline'} aria-pressed={!phone} onClick={() => setPhone(false)}>{t('desktop')}</Button>
+      <Button size="sm" variant={phone ? 'outline' : 'ghost'} aria-pressed={phone} onClick={() => setPhone(true)}>{t('phone')}</Button>
+    </div>
+    <div style={{ display: 'flex', justifyContent: 'center', padding: phone ? 12 : 0, background: phone ? 'var(--muted)' : undefined, borderRadius: 6 }}>
+      <iframe ref={frame} title={title} sandbox="allow-same-origin" srcDoc={html} onLoad={fit}
+        style={{ width: phone ? 375 : '100%', height, border: '1px solid var(--border)', borderRadius: 6, background: 'white', display: 'block' }} />
+    </div>
+  </Stack>;
+}
+
 function languageTag(tag: string) { try { return Intl.getCanonicalLocales(tag.trim())[0]; } catch { return undefined; } }
 function languageName(tag: string, display: string) {
   try { return new Intl.DisplayNames([display], { type: 'language' }).of(tag) ?? tag; } catch { return tag; }
@@ -182,7 +201,7 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
 
   const setSource = (part: string, text: string) => setSources((old) => ({ ...old, [lang]: { ...old[lang], [part]: text } }));
   const addPart = () => {
-    setParts([...parts, { name: newPart, kind: 'text' }]);
+    setParts([...parts, { name: newPart, kind: newPart === 'html' || newPart.endsWith('_html') ? 'html' : 'text' }]);
     setSources((old) => Object.fromEntries(Object.entries(old).map(([l, s]) => [l, { ...s, [newPart]: '' }])));
     setSelected(newPart); setNewPart('');
   };
@@ -238,7 +257,7 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
         <Panel title={t('languages')} description={t('languageHelp')} actions={<Stack direction="row" gap={4} style={{ alignItems: 'center' }}>
           {addable.length > 0 && <SelectControl aria-label={t('addLanguage')} value="" onValueChange={(l) => { setSources((old) => ({ ...old, [l]: { ...old[lang] } })); setLanguage(l); }}
             options={[{ value: '', label: t('addLanguage'), disabled: true }, ...addable.map((l) => ({ value: l, label: `${l} · ${languageName(l, i18n.language)}` }))]} />}
-          <Input aria-label={t('languageTag')} placeholder={t('languageTag')} value={newLanguage} aria-invalid={!!newLanguage && !tag} style={{ ...mono, width: 150 }} onChange={(event) => setNewLanguage(event.target.value)}
+          <Input aria-label={t('languageTag')} placeholder={t('languageTagHint')} value={newLanguage} aria-invalid={!!newLanguage && !tag} style={{ ...mono, width: 150 }} onChange={(event) => setNewLanguage(event.target.value)}
             onKeyDown={(event) => { if (event.key === 'Enter') addLanguage(); }} />
           <Button size="sm" variant="outline" disabled={!tag || !!sources[tag]} onClick={addLanguage}>{t('addLanguage')}</Button></Stack>}>
           <Stack gap={8}>
@@ -295,7 +314,7 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
             {!preview.value ? <span style={muted}>{t('previewEmpty')}</span> : parts.map((p) => <div key={p.name}>
               <div style={{ ...muted, marginBottom: 4 }}><span style={mono}>{p.name}</span> · {p.kind}</div>
               {p.kind === 'html' && preview.value?.parts[p.name] !== undefined
-                ? <iframe title={`${t('preview')} ${p.name}`} sandbox="" srcDoc={preview.value.parts[p.name]} style={{ width: '100%', height: 240, border: '1px solid var(--border)', borderRadius: 6, background: 'white' }} />
+                ? <HtmlPreview title={`${t('preview')} ${p.name}`} html={preview.value.parts[p.name]} />
                 : <pre style={{ ...mono, margin: 0, padding: 8, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', border: '1px solid var(--border)', borderRadius: 6, minHeight: 32 }}>{preview.value?.parts[p.name] ?? '—'}</pre>}
             </div>)}
           </Stack>
