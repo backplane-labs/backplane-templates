@@ -290,7 +290,7 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
                 <Button size="sm" variant="ghost" disabled={parts.length < 2} onClick={() => removePart(current.name)}>{t('removePart', { name: current.name })}</Button>
               </Stack>
               {untranslated(lang, current.name) && lang !== defaultLanguage && <span role="status" style={{ ...muted, color: 'var(--warning, #b45309)' }}>{t('untranslated', { language: defaultLanguage })}</span>}
-              <CodeEditor key={`${lang}:${current.name}`} label={t('source', { name: `${lang}/${current.name}` })} value={source} onChange={(text) => setSource(current.name, text)} language="text" mode={mode}
+              <CodeEditor key={`${lang}:${current.name}`} label={t('source', { name: `${lang}/${current.name}` })} value={source} onChange={(text) => setSource(current.name, text)} language={current.kind === 'html' ? 'html' : 'text'} mode={mode}
                 height={current.name === 'subject' || current.name === 'title' ? 96 : 320} complete={complete(sample)} diagnostics={diagnostics} onSubmit={() => { if (canSave) doSave(); }} />
               <p style={{ ...muted, margin: 0 }}><b>{t('functions')}:</b> {t('functionsHelp')}</p>
             </>}
@@ -340,9 +340,9 @@ function Versions({ template, language, parts, sources, mode, client, diffOf, on
       <TableBody>{template.versions.map((v) => <TableRow key={String(v.version)}>
         <TableCell style={mono}>v{String(v.version)}{v.version === template.activeVersion && <StatusBadge tone="success" style={{ marginLeft: 6 }}>{t('active')}</StatusBadge>}
           {v.version === template.content?.version && <Badge variant="outline" style={{ marginLeft: 6 }}>{t('edit')}</Badge>}</TableCell>
-        <TableCell>{v.comment || <span style={muted}>—</span>}</TableCell>
+        <TableCell style={{ whiteSpace: 'normal', minWidth: 140 }}>{v.comment || <span style={muted}>—</span>}</TableCell>
         <TableCell><Time value={date(v.createdAt)} /></TableCell>
-        <TableCell><Stack direction="row" gap={4}>
+        <TableCell style={{ whiteSpace: 'normal' }}><Stack direction="row" gap={4} style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <Button size="sm" variant={diffOf === v.version ? 'default' : 'ghost'} onClick={() => onDiff(diffOf === v.version ? undefined : v.version)}>{t('diff')}</Button>
           {v.version !== template.content?.version && <Button size="sm" variant="ghost" onClick={() => onLoad(v.version)}>{t('loadVersion')}</Button>}
           {v.version !== template.activeVersion && <ConfirmAction trigger={<Button size="sm" variant="outline">{t('activateVersion')}</Button>} title={t('activateTitle', { version: String(v.version) })} description={t('activateHelp')} confirmLabel={t('activateVersion')}
