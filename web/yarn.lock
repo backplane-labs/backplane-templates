@@ -92,40 +92,40 @@
     "@babel/helper-string-parser" "^7.29.7"
     "@babel/helper-validator-identifier" "^7.29.7"
 
-"@backplane-labs/backplane-api@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-api/0.6.11/3fd17229a1543597b4916b4e4ac0dc2c3131f24a#3fd17229a1543597b4916b4e4ac0dc2c3131f24a"
-  integrity sha512-v/BpYMGzLuOF8wsIc0YGgpO8/cZ5NMs4IkCPKdGoNg2RMF0Oq1Kv3YtMqB50bce1UTYGfZVCdlXv1ANE4kC6Mg==
+"@backplane-labs/backplane-api@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-api/0.6.12/7d5300ed10f193556e6edb1314245f8a5bcd36df#7d5300ed10f193556e6edb1314245f8a5bcd36df"
+  integrity sha512-jOcSIUrxYE7QJPtNaa1WrVSbEAmZKY1ohlZ/XUP7hy8YD7oIvJN6OqSKxrz5a4/KayJAZh1wsgGRs8IdEy/cUQ==
   dependencies:
     "@bufbuild/protobuf" "2.16.0"
     "@gopherex/ws-proto-transport" "1.7.0"
 
-"@backplane-labs/backplane-charts@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-charts/0.6.11/7b8b15c3b6b65dabdd4f831dda6427a655ede90e#7b8b15c3b6b65dabdd4f831dda6427a655ede90e"
-  integrity sha512-I0weDiibs+47lkDJ8avXLCe77bo5/BceyRrQA63td8NcNc5M/5Ql0yKWKHI+OaQu7cr1iVQp4+vfsp6gcJhGHg==
+"@backplane-labs/backplane-charts@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-charts/0.6.12/a106f2a99ad93af21515a3af2913d0669091b37e#a106f2a99ad93af21515a3af2913d0669091b37e"
+  integrity sha512-uMzN5gNileq7m2iNt66qNhU1vMPQ6TiCxkXSVl6T85sjh/icVZFu+UA8sqVt2REBktViPt8kjGjrXaSg08uxig==
   dependencies:
-    "@backplane-labs/backplane-theme" "0.6.11"
-    "@backplane-labs/backplane-ui" "0.6.11"
+    "@backplane-labs/backplane-theme" "0.6.12"
+    "@backplane-labs/backplane-ui" "0.6.12"
     "@grafana/data" "13.2.3"
     "@grafana/schema" "13.2.3"
     "@grafana/ui" "13.2.3"
     uplot "1.6.32"
 
-"@backplane-labs/backplane-client@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-client/0.6.11/573f246c99a3bfc4e06aa95deedb4450861eea9c#573f246c99a3bfc4e06aa95deedb4450861eea9c"
-  integrity sha512-8TpyKasMNvS/liL7ukcXnNM3AZmO+XgZ0NFaOMdelKjh1Y4Cs7DX7+igJYPUAkgHlZP3DztEIhfgHiZjPPOG7g==
+"@backplane-labs/backplane-client@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-client/0.6.12/203761930a2be7faf95d85c82dfd25f64978f28e#203761930a2be7faf95d85c82dfd25f64978f28e"
+  integrity sha512-zlzmzDAH3phTa0j6/wR1w1On1QAI2W5ZJjyysDugsaD1/QhkXXMLzxfdLPwrthYMxC9WeBZkbQinQsvT9aH/5g==
   dependencies:
     "@gopherex/ws-proto-transport" "1.7.0"
 
-"@backplane-labs/backplane-editors@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-editors/0.6.11/64732078c436ae32db2f9644599c56702146f5d5#64732078c436ae32db2f9644599c56702146f5d5"
-  integrity sha512-hd9gQn8u1vfVmoL+TtMd82WoIKysDxnefpVBoUQ/9XIJdNeeL7fwioHtVZzONS+Jz3Oei4Qa7sZX8UNrqgD9Og==
+"@backplane-labs/backplane-editors@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-editors/0.6.12/f22e9e9af717ef44b4bc309a8ef3b25776a125a1#f22e9e9af717ef44b4bc309a8ef3b25776a125a1"
+  integrity sha512-Wfoh9KZs+GQ1wrlKyfNQu6b9zqb0a96QBMtDoIyJiDNywveSblPFAZoZNkUKFPtTXp3KGraLcj9f8BmVf2iDKw==
   dependencies:
-    "@backplane-labs/backplane-theme" "0.6.11"
-    "@backplane-labs/backplane-ui" "0.6.11"
+    "@backplane-labs/backplane-theme" "0.6.12"
+    "@backplane-labs/backplane-ui" "0.6.12"
     "@codemirror/autocomplete" "6.20.3"
     "@codemirror/commands" "6.11.1"
     "@codemirror/lang-html" "6.4.12"
@@ -138,27 +138,27 @@
     "@codemirror/view" "6.43.13"
     "@lezer/highlight" "1.2.5"
 
-"@backplane-labs/backplane-observability-ui@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-observability-ui/0.6.11/83729f7404e52eeef088e1ed2dd1435cc73ffab8#83729f7404e52eeef088e1ed2dd1435cc73ffab8"
-  integrity sha512-b15Z3uFDkDDJFkYD08WTW4Zc/WP93R7X5lQtb9sRkpovNU7XyTQ2L0ZhnCppzaOy7zGY5V0sQ+8lHc7iDA/h8Q==
+"@backplane-labs/backplane-observability-ui@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-observability-ui/0.6.12/b1bc08e03d17ab12444f58103f4da9d27ab7ba05#b1bc08e03d17ab12444f58103f4da9d27ab7ba05"
+  integrity sha512-yzT8Ik2tTbD5Ij64x/w/COxjz8ydxtxJhd+O4kF5GbUCGGqHe1/LT7cTNZeYnHtFlJOH1YApgYa/W3MNA9D1JA==
   dependencies:
-    "@backplane-labs/backplane-editors" "0.6.11"
-    "@backplane-labs/backplane-ui" "0.6.11"
+    "@backplane-labs/backplane-editors" "0.6.12"
+    "@backplane-labs/backplane-ui" "0.6.12"
 
-"@backplane-labs/backplane-platform-ui@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-platform-ui/0.6.11/78f4bb19a88f764fa655dd2983a43231e22b3705#78f4bb19a88f764fa655dd2983a43231e22b3705"
-  integrity sha512-pGtkQIn9tXWK8E+cor9V/5IlwjmC+UioTeFLwSaNllnvZbsJHuFt86lniwcSOan5bfjSTFxEMO5ISvp9bLvJhQ==
+"@backplane-labs/backplane-platform-ui@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-platform-ui/0.6.12/684c26334532ffad45537ae1f47da9c53af3c449#684c26334532ffad45537ae1f47da9c53af3c449"
+  integrity sha512-KHc20pM1AQafRV1qVChkql3fXlCE3cMi5cbx8GB0xzPAj+O9zdlWZJ4VKDhLcadhITAjuN53I4LNk5e66BLUCA==
   dependencies:
-    "@backplane-labs/backplane-api" "0.6.11"
-    "@backplane-labs/backplane-charts" "0.6.11"
-    "@backplane-labs/backplane-client" "0.6.11"
-    "@backplane-labs/backplane-editors" "0.6.11"
-    "@backplane-labs/backplane-observability-ui" "0.6.11"
-    "@backplane-labs/backplane-react" "0.6.11"
-    "@backplane-labs/backplane-schema-forms" "0.6.11"
-    "@backplane-labs/backplane-ui" "0.6.11"
+    "@backplane-labs/backplane-api" "0.6.12"
+    "@backplane-labs/backplane-charts" "0.6.12"
+    "@backplane-labs/backplane-client" "0.6.12"
+    "@backplane-labs/backplane-editors" "0.6.12"
+    "@backplane-labs/backplane-observability-ui" "0.6.12"
+    "@backplane-labs/backplane-react" "0.6.12"
+    "@backplane-labs/backplane-schema-forms" "0.6.12"
+    "@backplane-labs/backplane-ui" "0.6.12"
     "@bufbuild/protobuf" "2.16.0"
     "@gopherex/schemapb" "1.7.0"
     "@xyflow/react" "12.10.2"
@@ -166,10 +166,10 @@
     lucide-react "1.48.0"
     yaml "2.9.1"
 
-"@backplane-labs/backplane-plugin-build@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-plugin-build/0.6.11/4b384a097de060940ae73b8af4969a3cc7baf5a8#4b384a097de060940ae73b8af4969a3cc7baf5a8"
-  integrity sha512-HiIHBgXkM51+lekvfplPR1U5+8fkcfhec0Fg0+9fk1WjbS1B+o+J8qYSkYICJFMz3HUs3s7G0lXZhlc7RmqnXw==
+"@backplane-labs/backplane-plugin-build@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-plugin-build/0.6.12/9e6f84569b3a5776dc6b9aeb2bdc09aa4528ad7f#9e6f84569b3a5776dc6b9aeb2bdc09aa4528ad7f"
+  integrity sha512-WUkAstfLcotdabRBnr/4h4psxD4K7Z6oGaohCIKQB0H9huQJGODED+gKNAZn/nH6co+E+P3YObrOWmyV5vOUwQ==
   dependencies:
     "@module-federation/vite" "1.23.0"
     "@vitejs/plugin-react" "6.1.1"
@@ -177,43 +177,43 @@
     react "19.3.0"
     react-dom "19.3.0"
 
-"@backplane-labs/backplane-plugin-sdk@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-plugin-sdk/0.6.11/a3f440ce1edf39c32265685c95b5f62415a6a170#a3f440ce1edf39c32265685c95b5f62415a6a170"
-  integrity sha512-1wTvsIMIkA/BDg8bveA9GKwtukOQYfuClL0lLAUQVjOnrsXAV7UmWm60OSFVUmFwkGnE0LAiCJHbOB5B9zZV6w==
+"@backplane-labs/backplane-plugin-sdk@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-plugin-sdk/0.6.12/8a4ba1da993056c8aa2dc61c83ec814919e607bf#8a4ba1da993056c8aa2dc61c83ec814919e607bf"
+  integrity sha512-vn0PO9Xc08nqpTZSo0OclbmcHOHovqkpnNjAH9VDdoUKKmL95gEokcdEW0ndV0MjFXQc/XLf8COFD6GloDlc6Q==
   dependencies:
-    "@backplane-labs/backplane-theme" "0.6.11"
+    "@backplane-labs/backplane-theme" "0.6.12"
     "@module-federation/runtime" "2.9.1"
 
-"@backplane-labs/backplane-react@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-react/0.6.11/8d8ac4650fb34282f1a2d43991476e27a8d7f3de#8d8ac4650fb34282f1a2d43991476e27a8d7f3de"
-  integrity sha512-kLt3B269nKFL6ta8cXtqfEyltxDzgMP0Oa9RQImw5B1yLm8usEQ6fiaz0tIk+Qc/oz82Vyr4fliewtC0UYy1BQ==
+"@backplane-labs/backplane-react@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-react/0.6.12/6722710e27bd4db235ea97f730942e66eb2b1981#6722710e27bd4db235ea97f730942e66eb2b1981"
+  integrity sha512-iyzXbHoAx+wuGiP7IiI0ATmEFew4d57OVf40K+p80EWQ5tJfSzilJ+lgFLNNxfjpOct17fvRDKsqAKpO9vAyWQ==
   dependencies:
-    "@backplane-labs/backplane-client" "0.6.11"
+    "@backplane-labs/backplane-client" "0.6.12"
 
-"@backplane-labs/backplane-schema-forms@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-schema-forms/0.6.11/c561e7659cf49a9bfb9406001fda3cbb75ddb70f#c561e7659cf49a9bfb9406001fda3cbb75ddb70f"
-  integrity sha512-VmnIOJ3Otl6bzFY7Mk4uwpxI44YNrYw+yzQQMj0sDWEDNLKgRWM4dlvPjZcUfJd97no26Lhm41reDA6dR62axQ==
+"@backplane-labs/backplane-schema-forms@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-schema-forms/0.6.12/c7b4b26c8153e4795140f0ed65455f3e14072b42#c7b4b26c8153e4795140f0ed65455f3e14072b42"
+  integrity sha512-duL9W5YLJGqN7D2QLDaL8ZpdRHtEZkOIz5gZWQy6R5FRV9q7whSoiTjbh9xspYUct2MeEOMWKMc4Lc8Mesloww==
   dependencies:
-    "@backplane-labs/backplane-ui" "0.6.11"
+    "@backplane-labs/backplane-ui" "0.6.12"
     "@bufbuild/protobuf" "2.16.0"
     "@gopherex/schemapb" "1.7.0"
 
-"@backplane-labs/backplane-theme@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-theme/0.6.11/aa0092daf79bb09cf68513bb35ca16b446e1eaab#aa0092daf79bb09cf68513bb35ca16b446e1eaab"
-  integrity sha512-efzSdeI7UwcExXeTHut75r9pLkAl/rECXgX0QtPJS6LIkoQ4ozurq5hy9M04fqJo22p1hbtcD92zvGDPMnNTaw==
+"@backplane-labs/backplane-theme@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-theme/0.6.12/d3e383f3cdcf7ae0b40e3df6897b6be3203aa823#d3e383f3cdcf7ae0b40e3df6897b6be3203aa823"
+  integrity sha512-FYOuLKf6vGoWxXWc27+v4ZnVOqewXdQZQaN91tOsemIVLOwuE+ZBymufBPfnqsdzDucgeoCDqM2PXG9ynjFMBA==
   dependencies:
     "@grafana/data" "13.2.3"
 
-"@backplane-labs/backplane-ui@0.6.11":
-  version "0.6.11"
-  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-ui/0.6.11/e118184ee521c2387a1f05d46c25bce79551855f#e118184ee521c2387a1f05d46c25bce79551855f"
-  integrity sha512-L6v64L0t5lv8lHVSMuh6p/Q9LdzK4YAENsa22eI/kHeh4cxfXKZTt98se86d3MoPBwNzqsCyruvSmxvK66wfrQ==
+"@backplane-labs/backplane-ui@0.6.12":
+  version "0.6.12"
+  resolved "https://npm.pkg.github.com/download/@backplane-labs/backplane-ui/0.6.12/6b736fc549985537fa539a23dde7508f212001c7#6b736fc549985537fa539a23dde7508f212001c7"
+  integrity sha512-nbvOHOGtO4ZHUGWIq16KsfqZUs2iO8TWX16Ft3saCpg/4oyxuCIRJV2aqyQFr1nmMJZRXm/q8THpF083p5NvNA==
   dependencies:
-    "@backplane-labs/backplane-theme" "0.6.11"
+    "@backplane-labs/backplane-theme" "0.6.12"
     "@grafana/data" "13.2.3"
     "@grafana/ui" "13.2.3"
     "@tanstack/react-table" "8.21.3"

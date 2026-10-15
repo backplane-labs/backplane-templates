@@ -351,7 +351,7 @@ function Versions({ template, language, parts, sources, mode, client, diffOf, on
       </TableRow>)}</TableBody></Table>
     {diffOf && other.value?.content && <Stack gap={12} style={{ padding: 12 }}>{names.map((part) => <div key={part}>
       <div style={{ ...muted, marginBottom: 4 }}>{t('diffOf', { part: `${language}/${part}`, version: String(diffOf) })}</div>
-      <DiffViewer label={t('diffOf', { part: `${language}/${part}`, version: String(diffOf) })} before={before[part] ?? ''} after={sources[part] ?? ''} mode={mode} language="text" height={160} />
+      <DiffViewer label={t('diffOf', { part: `${language}/${part}`, version: String(diffOf) })} before={before[part] ?? ''} after={sources[part] ?? ''} mode={mode} language={parts.find((p) => p.name === part)?.kind === 'html' ? 'html' : 'text'} height={160} />
     </div>)}</Stack>}
   </Panel>;
 }
