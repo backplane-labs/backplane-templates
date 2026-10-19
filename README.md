@@ -56,6 +56,47 @@ Data holds at most 10000 elements, a part renders at most 1 MiB (`replace`
 and `join` refuse to build more), a render takes at most 2 s, and the
 renders running at once are bounded.
 
+## Templates from files
+
+An installation can keep its templates in files instead of the console:
+set `files.dir` (`TEMPLATES_FILES_DIR`) to a directory, e.g. a mounted
+Kubernetes ConfigMap or a directory baked into the image. Every
+subdirectory is one template, named by it:
+
+```
+kratos.recovery_code_valid/
+  template.yaml        # optional: description, default_language, sample
+  en/subject.txt       # <language>/<part>.<ext>: .txt is a text part, .html an html one
+  en/text.txt
+  en/html.html
+  ru/subject.txt
+  ...
+_footer/
+  en/html.html         # a shared piece: the part named as the including one (or its only part)
+```
+
+```yaml
+# template.yaml
+description: The code that recovers an account
+default_language: en   # needed only when there are several languages and none is the installation's default
+sample: {code: "731045", link: "https://shop.example/recovery?code=731045", minutes: 60}
+```
+
+Every replica reads the directory at start and every `files.poll` (5s),
+and keeps the templates equal to it:
+
+- A changed template becomes its next version, activated at once, author
+  `files`, comment `from <name>/`. Unchanged files write nothing.
+- The console reads and previews such a template but cannot save, activate
+  or delete it (`FAILED_PRECONDITION`); the list marks it `files`.
+- A template whose directory is gone is deleted; the name is the console's
+  again.
+- A template that does not compile keeps the version in force and is
+  logged. If the directory does not read whole (an unknown file, a part
+  missing in a language, a bad name), nothing changes until it is fixed.
+  Names starting with a dot are skipped, so a ConfigMap's `..data` works
+  as is.
+
 ## Configuration
 
 ```yaml
@@ -63,6 +104,9 @@ languages: [en, ru]            # live: the languages the editor offers
 default_language: en           # live: the language renders fall back to last
 store:
   dsn: postgres://templates:secret@postgres:5432/backplane?sslmode=disable
+files:
+  dir: /etc/templates          # optional: templates kept from files (above)
+  poll: 5s
 ```
 
 The store is required: without it the instance is not ready. State lives in

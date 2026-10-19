@@ -1,7 +1,7 @@
 -- Templates (internal/templates, internal/admin).
 
 -- name: ListTemplates :many
-SELECT t.name, t.description, t.active_version, t.created_at, t.updated_at,
+SELECT t.name, t.description, t.active_version, t.created_at, t.updated_at, t.managed_by,
   (SELECT count(*) FROM templates.template_version v WHERE v.name = t.name) AS versions,
   (SELECT v.parts FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_parts,
   (SELECT v.translations FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_translations,
@@ -10,12 +10,21 @@ FROM templates.template t
 ORDER BY t.name;
 
 -- name: GetTemplate :one
-SELECT name, description, active_version, created_at, updated_at FROM templates.template WHERE name = @name;
+SELECT name, description, active_version, created_at, updated_at, managed_by FROM templates.template WHERE name = @name;
 
 -- name: UpsertTemplate :exec
 INSERT INTO templates.template (name, description)
 VALUES (@name, @description)
 ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description, updated_at = now();
+
+-- name: SetManagedBy :exec
+UPDATE templates.template SET managed_by = @managed_by WHERE name = @name;
+
+-- name: TemplatesStamp :one
+-- Moves on every save, activation and delete: what the files source
+-- compares to skip a pass that has nothing to do.
+SELECT count(*)::bigint AS templates, coalesce(max(updated_at), 'epoch'::timestamptz)::timestamptz AS updated_at
+FROM templates.template;
 
 -- name: NextVersion :one
 SELECT coalesce(max(version), 0) + 1 AS version FROM templates.template_version WHERE name = @name;

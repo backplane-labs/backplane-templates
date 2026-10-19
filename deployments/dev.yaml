@@ -3,3 +3,6 @@ languages: [en, ru]
 default_language: en
 store:
   dsn: postgres://backplane:backplane@localhost:5433/backplane?sslmode=disable
+# Templates kept from files (gitignored; a missing directory changes nothing).
+files:
+  dir: .dev/templates

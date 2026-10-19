@@ -4,6 +4,7 @@ CREATE TABLE "templates"."template" (
   "name" text NOT NULL,
   "description" text NOT NULL DEFAULT ''::text,
   "active_version" int8,
+  "managed_by" text,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY ("name")

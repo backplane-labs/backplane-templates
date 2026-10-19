@@ -96,6 +96,7 @@ func (a *Admin) ListTemplates(
 		r := &rows[i]
 		summary := &templatesconsolev1.TemplateSummary{
 			Name: r.Name, Description: r.Description, Versions: r.Versions, UpdatedAt: timestamppb.New(r.UpdatedAt),
+			ManagedBy: deref(r.ManagedBy),
 		}
 
 		if r.ActiveVersion != nil {
@@ -141,7 +142,7 @@ func (a *Admin) GetTemplate(
 		return nil, a.failed("get", err)
 	}
 
-	out := &templatesconsolev1.GetTemplateResponse{Name: t.Name, Description: t.Description}
+	out := &templatesconsolev1.GetTemplateResponse{Name: t.Name, Description: t.Description, ManagedBy: deref(t.ManagedBy)}
 	if t.ActiveVersion != nil {
 		out.ActiveVersion = *t.ActiveVersion
 	}
@@ -243,6 +244,10 @@ func (a *Admin) SaveTemplate(
 	out := &templatesconsolev1.SaveTemplateResponse{Problems: problems}
 
 	err = st.InTx(ctx, func(ctx context.Context) error {
+		if err := consoleOwns(ctx, st, req.GetName()); err != nil {
+			return err
+		}
+
 		err := st.Q.UpsertTemplate(ctx, db.UpsertTemplateParams{Name: req.GetName(), Description: req.GetDescription()})
 		if err != nil {
 			return fmt.Errorf("upsert: %w", err)
@@ -274,7 +279,7 @@ func (a *Admin) SaveTemplate(
 		return nil
 	})
 	if err != nil {
-		return nil, a.failed("save", err)
+		return nil, a.changeFailed("save", err)
 	}
 
 	a.audit(ctx, "template.saved", req.GetName(), xlog.Int64("version", out.GetVersion()),
@@ -323,6 +328,37 @@ func (a *Admin) compileAll(
 	}
 
 	return problems, nil
+}
+
+// errManaged: the template is kept by the files source, which alone
+// changes it.
+var errManaged = errors.New("the template is kept by the files source")
+
+// consoleOwns is errManaged when the files source keeps the template
+// (run it in the transaction of the change).
+func consoleOwns(ctx context.Context, st *store.Store, name string) error {
+	t, err := st.Q.GetTemplate(ctx, name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("get: %w", err)
+	}
+
+	if dir := deref(t.ManagedBy); dir != "" {
+		return fmt.Errorf("%w (%s); change its files", errManaged, dir)
+	}
+
+	return nil
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+
+	return *s
 }
 
 // checkName refuses a name that is not a template name.
@@ -384,9 +420,21 @@ func (a *Admin) ActivateVersion(
 		return nil, err
 	}
 
-	n, err := st.Q.ActivateVersion(ctx, db.ActivateVersionParams{Name: req.GetName(), Version: req.GetVersion()})
+	var n int64
+
+	err = st.InTx(ctx, func(ctx context.Context) error {
+		if err := consoleOwns(ctx, st, req.GetName()); err != nil {
+			return err
+		}
+
+		var err error
+
+		n, err = st.Q.ActivateVersion(ctx, db.ActivateVersionParams{Name: req.GetName(), Version: req.GetVersion()})
+
+		return err //nolint:wrapcheck // named below
+	})
 	if err != nil {
-		return nil, a.failed("activate", err)
+		return nil, a.changeFailed("activate", err)
 	}
 
 	if n == 0 {
@@ -411,9 +459,21 @@ func (a *Admin) DeleteTemplate(
 		return nil, err
 	}
 
-	n, err := st.Q.DeleteTemplate(ctx, req.GetName())
+	var n int64
+
+	err = st.InTx(ctx, func(ctx context.Context) error {
+		if err := consoleOwns(ctx, st, req.GetName()); err != nil {
+			return err
+		}
+
+		var err error
+
+		n, err = st.Q.DeleteTemplate(ctx, req.GetName())
+
+		return err //nolint:wrapcheck // named below
+	})
 	if err != nil {
-		return nil, a.failed("delete", err)
+		return nil, a.changeFailed("delete", err)
 	}
 
 	if n > 0 {
@@ -521,6 +581,16 @@ func (a *Admin) ready() (*store.Store, error) {
 	return a.store.Get(), nil
 }
 
+// changeFailed is FailedPrecondition for a template the files source
+// keeps, else failed.
+func (a *Admin) changeFailed(what string, err error) error {
+	if errors.Is(err, errManaged) {
+		return status.Errorf(codes.FailedPrecondition, "%s", err.Error())
+	}
+
+	return a.failed(what, err)
+}
+
 // failed is an Internal status; the cause goes to the log, not the console.
 func (a *Admin) failed(what string, err error) error {
 	a.Log().Warn(what+" failed", xlog.Err(err))
@@ -532,9 +602,14 @@ func (a *Admin) failed(what string, err error) error {
 // operator's session, not an identity the service can name), one record
 // per change (AuditID), the template name already validated.
 func (a *Admin) audit(ctx context.Context, name, template string, fields ...xlog.Field) {
+	a.auditAs(ctx, "console", name, template, fields...)
+}
+
+// auditAs is audit with another actor (the files source).
+func (a *Admin) auditAs(ctx context.Context, actor, name, template string, fields ...xlog.Field) {
 	fields = append([]xlog.Field{
 		backplane.Audit(), xlog.String("event.name", name), xlog.String(backplane.AuditID, uuid.NewString()),
-		xlog.String(backplane.AuditSubject, "template/"+template), xlog.String(backplane.AuditActor, "console"),
+		xlog.String(backplane.AuditSubject, "template/"+template), xlog.String(backplane.AuditActor, actor),
 		xlog.String(backplane.AuditOutcome, "succeeded"), xlog.String("template", template),
 	}, fields...)
 

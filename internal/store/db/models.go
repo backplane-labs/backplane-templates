@@ -11,6 +11,7 @@ type TemplatesTemplate struct {
 	Name          string
 	Description   string
 	ActiveVersion *int64
+	ManagedBy     *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }

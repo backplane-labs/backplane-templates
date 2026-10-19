@@ -82,6 +82,10 @@ message TemplateSummary {
   // Languages of the active version with an empty part.
   repeated string incomplete = 8;
   google.protobuf.Timestamp updated_at = 9;
+  // The template's directory under the service's files source; empty: the
+  // console's. A managed template is read-only here: saves, activations
+  // and deletes fail with FAILED_PRECONDITION.
+  string managed_by = 10;
 }
 
 message GetTemplateRequest {
@@ -97,6 +101,8 @@ message GetTemplateResponse {
   repeated VersionSummary versions = 4;
   // The requested version's content.
   Version content = 5;
+  // As TemplateSummary.managed_by.
+  string managed_by = 6;
 }
 
 message VersionSummary {

@@ -35,6 +35,17 @@ type Config struct {
 	// DefaultLanguage: renders fall back to it after the template's own; live.
 	DefaultLanguage config.Live[string] `json:"default_language" schemapb:"default=en;description=Fallback language"`
 	Store           postgres.Config     `json:"store"`
+	// Files keeps the templates of a directory in force (see README).
+	Files Files `json:"files"`
+}
+
+// Files is the files source: TEMPLATES_FILES_*.
+type Files struct {
+	// Dir holds one directory per template; empty: every template is the
+	// console's.
+	Dir string `json:"dir,omitempty" schemapb:"description=Directory of templates kept in force (empty: none)"`
+	// Poll is how often Dir is read again.
+	Poll time.Duration `json:"poll" schemapb:"default=5s;gt=0;description=How often the directory is read again"`
 }
 
 // probeTimeout bounds the store's readiness ping.
@@ -61,6 +72,10 @@ func newState(root backplane.Root[Config]) (*State, error) {
 
 	st.Templates = t
 	st.Admin = admin.New(root, st.Store, t)
+
+	if cfg.Files.Dir != "" {
+		admin.NewFiles(root, st.Admin, cfg.Files.Dir, cfg.Files.Poll)
+	}
 
 	return st, nil
 }

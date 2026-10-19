@@ -73,7 +73,7 @@ type fixture struct {
 	admin *admin.Admin
 }
 
-func start(t *testing.T) *fixture {
+func start(t *testing.T, also ...func(root deps.Scope, a *admin.Admin)) *fixture {
 	t.Helper()
 
 	h := backplanetest.New(t, backplanetest.Name("templates"))
@@ -86,6 +86,10 @@ func start(t *testing.T) *fixture {
 	}
 
 	a := admin.New(h.Root(), st, tp)
+
+	for _, fn := range also {
+		fn(h.Root(), a)
+	}
 
 	h.Start()
 

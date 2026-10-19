@@ -374,8 +374,12 @@ type TemplateSummary struct {
 	Languages       []string `protobuf:"bytes,6,rep,name=languages,proto3" json:"languages,omitempty"`
 	DefaultLanguage string   `protobuf:"bytes,7,opt,name=default_language,json=defaultLanguage,proto3" json:"default_language,omitempty"`
 	// Languages of the active version with an empty part.
-	Incomplete    []string               `protobuf:"bytes,8,rep,name=incomplete,proto3" json:"incomplete,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Incomplete []string               `protobuf:"bytes,8,rep,name=incomplete,proto3" json:"incomplete,omitempty"`
+	UpdatedAt  *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// The template's directory under the service's files source; empty: the
+	// console's. A managed template is read-only here: saves, activations
+	// and deletes fail with FAILED_PRECONDITION.
+	ManagedBy     string `protobuf:"bytes,10,opt,name=managed_by,json=managedBy,proto3" json:"managed_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -473,6 +477,13 @@ func (x *TemplateSummary) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *TemplateSummary) GetManagedBy() string {
+	if x != nil {
+		return x.ManagedBy
+	}
+	return ""
+}
+
 type GetTemplateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -533,7 +544,9 @@ type GetTemplateResponse struct {
 	ActiveVersion int64                  `protobuf:"varint,3,opt,name=active_version,json=activeVersion,proto3" json:"active_version,omitempty"`
 	Versions      []*VersionSummary      `protobuf:"bytes,4,rep,name=versions,proto3" json:"versions,omitempty"`
 	// The requested version's content.
-	Content       *Version `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	Content *Version `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	// As TemplateSummary.managed_by.
+	ManagedBy     string `protobuf:"bytes,6,opt,name=managed_by,json=managedBy,proto3" json:"managed_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -601,6 +614,13 @@ func (x *GetTemplateResponse) GetContent() *Version {
 		return x.Content
 	}
 	return nil
+}
+
+func (x *GetTemplateResponse) GetManagedBy() string {
+	if x != nil {
+		return x.ManagedBy
+	}
+	return ""
 }
 
 type VersionSummary struct {
@@ -1261,7 +1281,7 @@ const file_proto_templates_console_v1_admin_proto_rawDesc = "" +
 	"\x10default_language\x18\x02 \x01(\tR\x0fdefaultLanguage\"\x16\n" +
 	"\x14ListTemplatesRequest\"\\\n" +
 	"\x15ListTemplatesResponse\x12C\n" +
-	"\ttemplates\x18\x01 \x03(\v2%.templates.console.v1.TemplateSummaryR\ttemplates\"\xc4\x02\n" +
+	"\ttemplates\x18\x01 \x03(\v2%.templates.console.v1.TemplateSummaryR\ttemplates\"\xe3\x02\n" +
 	"\x0fTemplateSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
@@ -1274,16 +1294,21 @@ const file_proto_templates_console_v1_admin_proto_rawDesc = "" +
 	"incomplete\x18\b \x03(\tR\n" +
 	"incomplete\x129\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"B\n" +
+	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"managed_by\x18\n" +
+	" \x01(\tR\tmanagedBy\"B\n" +
 	"\x12GetTemplateRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\x03R\aversion\"\xed\x01\n" +
+	"\aversion\x18\x02 \x01(\x03R\aversion\"\x8c\x02\n" +
 	"\x13GetTemplateResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12%\n" +
 	"\x0eactive_version\x18\x03 \x01(\x03R\ractiveVersion\x12@\n" +
 	"\bversions\x18\x04 \x03(\v2$.templates.console.v1.VersionSummaryR\bversions\x127\n" +
-	"\acontent\x18\x05 \x01(\v2\x1d.templates.console.v1.VersionR\acontent\"\xb5\x01\n" +
+	"\acontent\x18\x05 \x01(\v2\x1d.templates.console.v1.VersionR\acontent\x12\x1d\n" +
+	"\n" +
+	"managed_by\x18\x06 \x01(\tR\tmanagedBy\"\xb5\x01\n" +
 	"\x0eVersionSummary\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\x03R\aversion\x12\x16\n" +
 	"\x06author\x18\x02 \x01(\tR\x06author\x12\x18\n" +

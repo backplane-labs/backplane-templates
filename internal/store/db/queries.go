@@ -25,7 +25,7 @@ func New(db DBTX) *Queries { return &Queries{db: db} }
 
 func (q *Queries) WithTx(tx pgx.Tx) *Queries { return &Queries{db: tx} }
 
-const listTemplatesSQL = `SELECT t.name, t.description, t.active_version, t.created_at, t.updated_at,
+const listTemplatesSQL = `SELECT t.name, t.description, t.active_version, t.created_at, t.updated_at, t.managed_by,
   (SELECT count(*) FROM templates.template_version v WHERE v.name = t.name) AS versions,
   (SELECT v.parts FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_parts,
   (SELECT v.translations FROM templates.template_version v WHERE v.name = t.name AND v.version = t.active_version) AS active_translations,
@@ -39,6 +39,7 @@ type ListTemplatesRow struct {
 	ActiveVersion      *int64
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+	ManagedBy          *string
 	Versions           int64
 	ActiveParts        json.RawMessage
 	ActiveTranslations json.RawMessage
@@ -54,7 +55,7 @@ func (q *Queries) ListTemplates(ctx context.Context) ([]ListTemplatesRow, error)
 	var items []ListTemplatesRow
 	for rows.Next() {
 		var i ListTemplatesRow
-		if err := rows.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt, &i.Versions, &i.ActiveParts, &i.ActiveTranslations, &i.ActiveDefault); err != nil {
+		if err := rows.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt, &i.ManagedBy, &i.Versions, &i.ActiveParts, &i.ActiveTranslations, &i.ActiveDefault); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -65,7 +66,7 @@ func (q *Queries) ListTemplates(ctx context.Context) ([]ListTemplatesRow, error)
 	return items, nil
 }
 
-const getTemplateSQL = `SELECT name, description, active_version, created_at, updated_at FROM templates.template WHERE name = $1;`
+const getTemplateSQL = `SELECT name, description, active_version, created_at, updated_at, managed_by FROM templates.template WHERE name = $1;`
 
 type GetTemplateRow struct {
 	Name          string
@@ -73,12 +74,13 @@ type GetTemplateRow struct {
 	ActiveVersion *int64
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	ManagedBy     *string
 }
 
 func (q *Queries) GetTemplate(ctx context.Context, name string) (GetTemplateRow, error) {
 	row := q.db.QueryRow(ctx, getTemplateSQL, name)
 	var i GetTemplateRow
-	err := row.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(&i.Name, &i.Description, &i.ActiveVersion, &i.CreatedAt, &i.UpdatedAt, &i.ManagedBy)
 	return i, err
 }
 
@@ -94,6 +96,35 @@ type UpsertTemplateParams struct {
 func (q *Queries) UpsertTemplate(ctx context.Context, arg UpsertTemplateParams) error {
 	_, err := q.db.Exec(ctx, upsertTemplateSQL, arg.Name, arg.Description)
 	return err
+}
+
+const setManagedBySQL = `UPDATE templates.template SET managed_by = $1 WHERE name = $2;`
+
+type SetManagedByParams struct {
+	ManagedBy *string
+	Name      string
+}
+
+func (q *Queries) SetManagedBy(ctx context.Context, arg SetManagedByParams) error {
+	_, err := q.db.Exec(ctx, setManagedBySQL, arg.ManagedBy, arg.Name)
+	return err
+}
+
+const templatesStampSQL = `-- Moves on every save, activation and delete: what the files source
+-- compares to skip a pass that has nothing to do.
+SELECT count(*)::bigint AS templates, coalesce(max(updated_at), 'epoch'::timestamptz)::timestamptz AS updated_at
+FROM templates.template;`
+
+type TemplatesStampRow struct {
+	Templates int64
+	UpdatedAt time.Time
+}
+
+func (q *Queries) TemplatesStamp(ctx context.Context) (TemplatesStampRow, error) {
+	row := q.db.QueryRow(ctx, templatesStampSQL)
+	var i TemplatesStampRow
+	err := row.Scan(&i.Templates, &i.UpdatedAt)
+	return i, err
 }
 
 const nextVersionSQL = `SELECT coalesce(max(version), 0) + 1 AS version FROM templates.template_version WHERE name = $1;`

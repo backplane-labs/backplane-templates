@@ -12,3 +12,6 @@ web/node_modules/
 web/dist/
 internal/ui/dist/*
 !internal/ui/dist/.keep
+
+# Local state of make run (the files source)
+/.dev/

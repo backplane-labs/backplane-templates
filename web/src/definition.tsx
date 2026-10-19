@@ -75,7 +75,7 @@ function List() {
         : <Table><TableHeader><TableRow><TableHead>{t('name')}</TableHead><TableHead>{t('descriptionLabel')}</TableHead><TableHead>{t('parts')}</TableHead><TableHead>{t('languages')}</TableHead><TableHead>{t('active')}</TableHead><TableHead>{t('versions')}</TableHead><TableHead>{t('updated')}</TableHead></TableRow></TableHeader>
           <TableBody>{state.value.templates.map((tpl) => <TableRow key={tpl.name} tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => navigate(route(tpl.name))}
             onKeyDown={(event) => { if (event.key === 'Enter') navigate(route(tpl.name)); }}>
-            <TableCell style={mono}>{tpl.name}</TableCell>
+            <TableCell style={mono}>{tpl.name}{tpl.managedBy && <Badge variant="outline" style={{ marginLeft: 6 }} title={t('managedTitle', { dir: tpl.managedBy })}>{t('fromFiles')}</Badge>}</TableCell>
             <TableCell>{tpl.description || <span style={muted}>—</span>}</TableCell>
             <TableCell><Stack direction="row" gap={4}>{tpl.parts.map((part) => <Badge key={part} variant="outline">{part}</Badge>)}</Stack></TableCell>
             <TableCell><Stack direction="row" gap={4}>{tpl.languages.map((lang) => tpl.incomplete.includes(lang)
@@ -218,7 +218,9 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
   const removeLanguage = (l: string) => {
     setSources((old) => { const { [l]: _, ...kept } = old; return kept; }); setLanguage(defaultLanguage);
   };
-  const canSave = nameValid && sampleValid && parts.length > 0 && !save.pending && !save.disabled && (dirty || !existing);
+  // Kept by the service's files source: read and previewed here, changed only through its files.
+  const managed = template?.managedBy ?? '';
+  const canSave = !managed && nameValid && sampleValid && parts.length > 0 && !save.pending && !save.disabled && (dirty || !existing);
   const doSave = () => void save.run(async (signal) => {
     setNotice(undefined);
     try {
@@ -240,8 +242,9 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
       meta={<Stack direction="row" gap={8}>{template?.activeVersion ? <StatusBadge tone="success">{t('active')} v{String(template.activeVersion)}</StatusBadge> : existing ? <StatusBadge tone="warning">{t('notActivated')}</StatusBadge> : null}
         {loaded && loaded.version !== template?.activeVersion && <Badge variant="outline">{t('version')} {String(loaded.version)}</Badge>}{dirty && <Badge variant="outline">{t('dirty')}</Badge>}</Stack>}
       actions={<Stack direction="row" gap={8}><Button variant="ghost" size="sm" onClick={onBack}>{t('back')}</Button>
-        {existing && <ConfirmAction trigger={<Button variant="outline" size="sm">{t('delete')}</Button>} title={t('deleteTitle', { name: existing })} description={t('deleteHelp')} confirmLabel={t('delete')}
+        {existing && !managed && <ConfirmAction trigger={<Button variant="outline" size="sm">{t('delete')}</Button>} title={t('deleteTitle', { name: existing })} description={t('deleteHelp')} confirmLabel={t('delete')}
           onConfirm={async (signal) => { await client.deleteTemplate(create(DeleteTemplateRequestSchema, { name: existing }), { signal }); onBack(); }} />}</Stack>} />
+    {managed && <p role="status" style={{ margin: 0 }}><StatusBadge tone="info">{t('managedTitle', { dir: managed })}</StatusBadge> <span style={muted}>{t('managedHelp')}</span></p>}
     {notice && <p role={notice.tone === 'danger' ? 'alert' : 'status'} style={{ margin: 0 }}><StatusBadge tone={notice.tone}>{notice.text}</StatusBadge></p>}
     <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 520px), 1fr))', alignItems: 'start' }}>
       <Stack gap={16}>
@@ -300,7 +303,7 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
           <CodeEditor label={t('sample')} value={sample} onChange={setSample} language="json" mode={mode} height={200} />
         </Panel>
         <Panel title={t('save')} footer={<Stack direction="row" gap={8} style={{ alignItems: 'center' }}>
-          <Button disabled={!canSave} onClick={doSave}>{save.pending ? t('saving') : t('save')}</Button>
+          <Button disabled={!canSave} title={managed ? t('managedToSave') : undefined} onClick={doSave}>{save.pending ? t('saving') : t('save')}</Button>
           <Stack direction="row" gap={6} style={{ alignItems: 'center' }}><Checkbox id="activate" checked={activate} onCheckedChange={(value) => setActivate(value === true)} /><Label htmlFor="activate">{t('activate')}</Label></Stack></Stack>}>
           <Field><FieldLabel htmlFor="template-comment">{t('comment')}</FieldLabel>
             <Input id="template-comment" value={comment} onChange={(event) => setComment(event.target.value)} /><FieldDescription>{t('commentHelp')}</FieldDescription></Field>
@@ -319,15 +322,15 @@ function Draft({ existing, template, mode, notice, onNotice: setNotice, offered,
             </div>)}
           </Stack>
         </Panel>
-        {template && <Versions template={template} language={lang} parts={parts} sources={sources[lang] ?? {}} mode={mode} client={client} diffOf={diffOf} onDiff={setDiffOf} onLoad={(version) => onReload(version)}
+        {template && <Versions template={template} managed={!!managed} language={lang} parts={parts} sources={sources[lang] ?? {}} mode={mode} client={client} diffOf={diffOf} onDiff={setDiffOf} onLoad={(version) => onReload(version)}
           onActivated={(version) => { setNotice({ tone: 'success', text: t('activated', { version: String(version) }) }); onReload(loaded?.version); }} />}
       </Stack>
     </div>
   </Stack>;
 }
 
-function Versions({ template, language, parts, sources, mode, client, diffOf, onDiff, onLoad, onActivated }: {
-  template: GetTemplateResponse; language: string; parts: PartDef[]; sources: Record<string, string>; mode: 'dark' | 'light'; client: Client;
+function Versions({ template, managed, language, parts, sources, mode, client, diffOf, onDiff, onLoad, onActivated }: {
+  template: GetTemplateResponse; managed: boolean; language: string; parts: PartDef[]; sources: Record<string, string>; mode: 'dark' | 'light'; client: Client;
   diffOf?: bigint; onDiff: (version?: bigint) => void; onLoad: (version: bigint) => void; onActivated: (version: bigint) => void;
 }) {
   const t = useText();
@@ -345,7 +348,7 @@ function Versions({ template, language, parts, sources, mode, client, diffOf, on
         <TableCell style={{ whiteSpace: 'normal' }}><Stack direction="row" gap={4} style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <Button size="sm" variant={diffOf === v.version ? 'default' : 'ghost'} onClick={() => onDiff(diffOf === v.version ? undefined : v.version)}>{t('diff')}</Button>
           {v.version !== template.content?.version && <Button size="sm" variant="ghost" onClick={() => onLoad(v.version)}>{t('loadVersion')}</Button>}
-          {v.version !== template.activeVersion && <ConfirmAction trigger={<Button size="sm" variant="outline">{t('activateVersion')}</Button>} title={t('activateTitle', { version: String(v.version) })} description={t('activateHelp')} confirmLabel={t('activateVersion')}
+          {v.version !== template.activeVersion && !managed && <ConfirmAction trigger={<Button size="sm" variant="outline">{t('activateVersion')}</Button>} title={t('activateTitle', { version: String(v.version) })} description={t('activateHelp')} confirmLabel={t('activateVersion')}
             onConfirm={async (signal) => { await client.activateVersion(create(ActivateVersionRequestSchema, { name: template.name, version: v.version }), { signal }); onActivated(v.version); }} />}
         </Stack></TableCell>
       </TableRow>)}</TableBody></Table>

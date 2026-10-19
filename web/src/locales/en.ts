@@ -19,5 +19,6 @@ export default {
   languageHelp: 'Every language has every part. Render picks the asked language, then its base (pt for pt-BR), then the default.', untranslated: 'Untranslated: empty or the same as {{language}}',
   incomplete: 'Incomplete: {{languages}}', copyOf: 'Starts as a copy of {{language}}.', invalidTag: 'Not a language tag.', previewIn: 'Preview in {{language}}',
   missing: 'Page not found', standalone: 'Standalone · local fixtures', embedded: 'Embedded in Backplane', light: 'Light theme', dark: 'Dark theme',
+  fromFiles: 'files', managedTitle: 'Kept by the files source: {{dir}}/', managedHelp: 'Change its files to change it; the editor still previews drafts.', managedToSave: 'Kept by the files source: change its files to save',
   variables: 'Variables', untitled: 'untitled', exists: 'A template with this name exists: open it instead.',
 };

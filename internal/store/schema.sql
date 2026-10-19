@@ -8,6 +8,10 @@ CREATE TABLE templates.template (
   description    text        NOT NULL DEFAULT '',
   -- The version Render uses; NULL: none activated yet.
   active_version bigint,
+  -- The template's directory under the files source (files.dir) that
+  -- keeps it; NULL: the console's. A managed template changes only
+  -- through its files.
+  managed_by     text,
   created_at     timestamptz NOT NULL DEFAULT now(),
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
