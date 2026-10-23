@@ -3,9 +3,9 @@ module github.com/backplane-labs/backplane-templates
 go 1.26.8
 
 require (
-	github.com/backplane-labs/backplane v0.6.22
+	github.com/backplane-labs/backplane v0.6.41
 	github.com/google/uuid v1.6.0
-	github.com/gopherex/pgtx v1.1.1
+	github.com/gopherex/pgtx v1.1.2
 	github.com/gopherex/xlog v1.2.1
 	github.com/jackc/pgx/v5 v5.11.0
 	go.opentelemetry.io/otel v1.47.0
@@ -20,7 +20,8 @@ require (
 	cel.dev/expr v0.25.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/avito-tech/go-transaction-manager v1.5.1 // indirect
+	github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2 v2.0.5 // indirect
+	github.com/avito-tech/go-transaction-manager/trm/v2 v2.0.5 // indirect
 	github.com/cbroglie/mustache v1.4.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -38,7 +39,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/cel-go v0.30.0 // indirect
-	github.com/gopherex/schemapb/go v1.7.0 // indirect
+	github.com/gopherex/schemapb/go v1.9.9 // indirect
 	github.com/gopherex/sqld v1.1.3 // indirect
 	github.com/gopherex/xconf v1.4.0 // indirect
 	github.com/gopherex/xconf/contrib/decoders/json v1.4.0 // indirect
@@ -51,9 +52,9 @@ require (
 	github.com/gopherex/xprobe v1.2.0 // indirect
 	github.com/gopherex/xprobe/pkg/transport/grpc v1.2.0 // indirect
 	github.com/gopherex/xshutdown v1.1.0 // indirect
-	github.com/gopherex/xtrace v1.1.0 // indirect
-	github.com/gopherex/xtrace/contrib/libs/xlog v1.1.0 // indirect
-	github.com/gopherex/xtrace/contrib/sdk v1.1.1 // indirect
+	github.com/gopherex/xtrace v1.1.3 // indirect
+	github.com/gopherex/xtrace/contrib/libs/xlog v1.1.3 // indirect
+	github.com/gopherex/xtrace/contrib/sdk v1.1.3 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/hashicorp/consul/api v1.33.4 // indirect
