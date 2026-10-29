@@ -3,7 +3,7 @@ module github.com/backplane-labs/backplane-templates
 go 1.26.8
 
 require (
-	github.com/backplane-labs/backplane v0.6.54
+	github.com/backplane-labs/backplane v0.6.57
 	github.com/google/uuid v1.6.0
 	github.com/gopherex/pgtx v1.1.2
 	github.com/gopherex/xlog v1.2.1
@@ -43,12 +43,12 @@ require (
 	github.com/gopherex/schemapb/go v1.9.9 // indirect
 	github.com/gopherex/sqld v1.1.3 // indirect
 	github.com/gopherex/ws-proto v1.8.1 // indirect
-	github.com/gopherex/xconf v1.4.0 // indirect
-	github.com/gopherex/xconf/contrib/decoders/json v1.4.0 // indirect
-	github.com/gopherex/xconf/contrib/decoders/yaml v1.4.0 // indirect
-	github.com/gopherex/xconf/contrib/sources/consul v1.4.0 // indirect
-	github.com/gopherex/xconf/contrib/sources/env v1.4.0 // indirect
-	github.com/gopherex/xconf/contrib/sources/file v1.4.0 // indirect
+	github.com/gopherex/xconf v1.4.2 // indirect
+	github.com/gopherex/xconf/contrib/decoders/json v1.4.2 // indirect
+	github.com/gopherex/xconf/contrib/decoders/yaml v1.4.2 // indirect
+	github.com/gopherex/xconf/contrib/sources/consul v1.4.2 // indirect
+	github.com/gopherex/xconf/contrib/sources/env v1.4.2 // indirect
+	github.com/gopherex/xconf/contrib/sources/file v1.4.2 // indirect
 	github.com/gopherex/xlog/contrib/libs/otel v1.2.1 // indirect
 	github.com/gopherex/xlog/contrib/libs/pgx v1.2.1 // indirect
 	github.com/gopherex/xprobe v1.2.0 // indirect
