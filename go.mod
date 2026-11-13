@@ -3,9 +3,9 @@ module github.com/backplane-labs/backplane-templates
 go 1.27.4
 
 require (
-	github.com/backplane-labs/backplane v0.6.82
+	github.com/backplane-labs/backplane v0.6.88
 	github.com/google/uuid v1.6.0
-	github.com/gopherex/pgtx v1.1.2
+	github.com/gopherex/pgtx v1.1.5
 	github.com/gopherex/xlog v1.2.1
 	github.com/jackc/pgx/v5 v5.11.0
 	go.opentelemetry.io/otel v1.47.0
@@ -71,13 +71,13 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/klauspost/compress v1.20.0 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.21 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/nats-io/nats.go v1.54.0 // indirect
-	github.com/nats-io/nkeys v0.4.16 // indirect
+	github.com/nats-io/nats.go v1.55.0 // indirect
+	github.com/nats-io/nkeys v0.4.17 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nexus-rpc/nexus-proto-annotations v0.1.0 // indirect
 	github.com/nexus-rpc/sdk-go v0.7.0 // indirect
@@ -111,13 +111,13 @@ require (
 	go.temporal.io/sdk/contrib/opentelemetry v0.8.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20250808145144-a408d31f581a // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
