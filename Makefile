@@ -10,7 +10,7 @@ SHELL := /bin/bash
 
 BIN := $(CURDIR)/bin
 
-GOLANGCI_LINT_VERSION      := v2.11.3
+GOLANGCI_LINT_VERSION      := v2.15.0
 SQLD_VERSION               := v1.1.8
 EASYP_VERSION              := v0.16.6
 PROTOC_GEN_GO_VERSION      := v1.36.11

@@ -290,5 +290,5 @@ func longdate(names calendar, v any) (string, error) {
 		return "", fmt.Errorf("longdate: %w", err)
 	}
 
-	return names.long(t), nil
+	return names.longDate(t), nil
 }
