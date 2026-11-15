@@ -15,3 +15,7 @@ internal/ui/dist/*
 
 # Local state of make run (the files source)
 /.dev/
+# Yarn 4 state; patches and plugins would be committed.
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
