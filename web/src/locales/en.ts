@@ -1,4 +1,4 @@
-export default {
+export const english = {
   templates: 'Templates',
   title: 'Message templates',
   description:

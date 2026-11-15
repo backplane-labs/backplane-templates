@@ -32,7 +32,7 @@ import {
   TableRow,
   Timestamp as Time,
 } from '@backplane-labs/backplane-ui';
-import { create } from '@bufbuild/protobuf';
+import { create, type JsonValue } from '@bufbuild/protobuf';
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -78,6 +78,18 @@ function canonical(text: string) {
     return text;
   }
 }
+/** One comparable string of a whole draft, for dirty tracking. */
+function snapshot(d: string, p: PartDef[], s: Sources, def: string, smp: string) {
+  return JSON.stringify({
+    d,
+    p: p.map((x) => [x.name, x.kind]),
+    s: Object.keys(s)
+      .sort()
+      .map((l) => [l, p.map((x) => s[l]?.[x.name] ?? '')]),
+    def,
+    smp: canonical(smp),
+  });
+}
 /** The canonical BCP 47 form of a tag, or undefined. */
 /** HtmlPreview shows an html part the way a mail client does: as tall as the message, at a desktop's or a phone's width. */
 function HtmlPreview({ title, html }: { title: string; html: string }) {
@@ -90,20 +102,39 @@ function HtmlPreview({ title, html }: { title: string; html: string }) {
     const doc = frame.current?.contentDocument;
     if (doc?.documentElement) setHeight(Math.min(4000, doc.documentElement.scrollHeight + 2));
   };
-  useEffect(() => {
-    const id = requestAnimationFrame(fit);
-    return () => cancelAnimationFrame(id);
-  }, [phone, html]); // eslint-disable-line react-hooks/exhaustive-deps
+  const refit = () => {
+    // phone switches the frame's width: measure after React commits it, before the next paint.
+    requestAnimationFrame(fit);
+  };
   return (
     <Stack gap={6}>
-      <div role="group" aria-label={t('previewWidth')} style={{ display: 'flex', gap: 4 }}>
-        <Button size="sm" variant={phone ? 'ghost' : 'outline'} aria-pressed={!phone} onClick={() => setPhone(false)}>
+      <fieldset
+        aria-label={t('previewWidth')}
+        style={{ display: 'flex', gap: 4, border: 0, padding: 0, margin: 0, minWidth: 0 }}
+      >
+        <Button
+          size="sm"
+          variant={phone ? 'ghost' : 'outline'}
+          aria-pressed={!phone}
+          onClick={() => {
+            setPhone(false);
+            refit();
+          }}
+        >
           {t('desktop')}
         </Button>
-        <Button size="sm" variant={phone ? 'outline' : 'ghost'} aria-pressed={phone} onClick={() => setPhone(true)}>
+        <Button
+          size="sm"
+          variant={phone ? 'outline' : 'ghost'}
+          aria-pressed={phone}
+          onClick={() => {
+            setPhone(true);
+            refit();
+          }}
+        >
           {t('phone')}
         </Button>
-      </div>
+      </fieldset>
       <div
         style={{
           display: 'flex',
@@ -285,13 +316,18 @@ function List() {
 
 /** Keys of the sample under the cursor's path, for {{. completion. */
 function sampleKeys(sample: string, path: string[]): string[] {
+  let value: JsonValue | undefined;
   try {
-    let value: unknown = JSON.parse(sample || '{}');
-    for (const key of path) value = (value as Record<string, unknown>)?.[key];
-    return value && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value) : [];
+    value = JSON.parse(sample || '{}');
   } catch {
     return [];
   }
+  for (const key of path) {
+    const next: JsonValue | undefined =
+      typeof value === 'object' && value !== null && !Array.isArray(value) ? value[key] : undefined;
+    value = next;
+  }
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value) : [];
 }
 const helpers = [
   'plural',
@@ -319,7 +355,7 @@ const helpers = [
   'template',
 ];
 function complete(sample: string) {
-  return async ({ value, position }: { value: string; position: number }): Promise<EditorCompletionResult | null> => {
+  const compute = ({ value, position }: { value: string; position: number }): EditorCompletionResult | null => {
     const before = value.slice(0, position),
       open = before.lastIndexOf('{{');
     if (open < 0 || before.lastIndexOf('}}') > open) return null;
@@ -338,6 +374,34 @@ function complete(sample: string) {
       from: position - word.length,
       options: helpers.filter((h) => h.startsWith(word)).map((label) => ({ label, type: 'function' as const })),
     };
+  };
+  return (input: { value: string; position: number }): Promise<EditorCompletionResult | null> =>
+    Promise.resolve(compute(input));
+}
+
+/** Parses the draft the editor just stringified into `settled`; throws only if that stringify was corrupted. */
+function parseDraft(text: string) {
+  const value: JsonValue = JSON.parse(text);
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('draft is not an object');
+  const sources: Record<string, string> = {};
+  const raw = value.sources;
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    for (const [language, source] of Object.entries(raw)) {
+      if (typeof source === 'string') sources[language] = source;
+    }
+  }
+  return {
+    parts: Array.isArray(value.parts)
+      ? value.parts.flatMap((part): PartDef[] => {
+          if (typeof part !== 'object' || part === null || Array.isArray(part)) return [];
+          return typeof part.name === 'string' && typeof part.kind === 'string'
+            ? [{ name: part.name, kind: part.kind }]
+            : [];
+        })
+      : [],
+    lang: typeof value.lang === 'string' ? value.lang : '',
+    sources,
+    sample: typeof value.sample === 'string' ? value.sample : '',
   };
 }
 
@@ -474,16 +538,6 @@ function Draft({
   const [diffOf, setDiffOf] = useState<bigint>();
   const save = usePlatformAction<void>();
 
-  const snapshot = (d: string, p: PartDef[], s: Sources, def: string, smp: string) =>
-    JSON.stringify({
-      d,
-      p: p.map((x) => [x.name, x.kind]),
-      s: Object.keys(s)
-        .sort()
-        .map((l) => [l, p.map((x) => s[l]?.[x.name] ?? '')]),
-      def,
-      smp: canonical(smp),
-    });
   const baseline = useMemo(
     () =>
       snapshot(
@@ -518,12 +572,7 @@ function Draft({
   const preview = usePlatformQuery(
     `templates:preview:${settled}`,
     (signal) => {
-      const draft = JSON.parse(settled) as {
-        parts: PartDef[];
-        lang: string;
-        sources: Record<string, string>;
-        sample: string;
-      };
+      const draft = parseDraft(settled);
       let data = draft.sample;
       try {
         JSON.parse(data || '{}');
@@ -956,8 +1005,8 @@ function Draft({
                 <div role="alert">
                   <b>{t('problems')}</b>
                   <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
-                    {problems.map((p, i) => (
-                      <li key={i} style={{ fontSize: 13 }}>
+                    {problems.map((p) => (
+                      <li key={`${p.part}: ${p.message}`} style={{ fontSize: 13 }}>
                         <span style={mono}>{p.part}</span>: {p.message}
                       </li>
                     ))}
