@@ -3,7 +3,7 @@ module github.com/backplane-labs/backplane-templates
 go 1.27.4
 
 require (
-	github.com/backplane-labs/backplane v0.6.117
+	github.com/backplane-labs/backplane v0.6.118
 	github.com/google/uuid v1.6.0
 	github.com/gopherex/pgtx v1.1.5
 	github.com/gopherex/xlog v1.3.1
