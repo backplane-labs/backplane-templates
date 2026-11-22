@@ -3,7 +3,7 @@ module github.com/backplane-labs/backplane-templates
 go 1.27.4
 
 require (
-	github.com/backplane-labs/backplane v0.6.100
+	github.com/backplane-labs/backplane v0.6.117
 	github.com/google/uuid v1.6.0
 	github.com/gopherex/pgtx v1.1.5
 	github.com/gopherex/xlog v1.3.1
@@ -40,7 +40,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/cel-go v0.30.0 // indirect
-	github.com/gopherex/schemapb/go v1.10.1 // indirect
+	github.com/gopherex/schemapb/go v1.13.2 // indirect
 	github.com/gopherex/sqld v1.1.3 // indirect
 	github.com/gopherex/ws-proto v1.11.1 // indirect
 	github.com/gopherex/xconf v1.4.2 // indirect
